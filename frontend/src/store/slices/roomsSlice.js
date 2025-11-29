@@ -158,11 +158,9 @@ const roomsSlice = createSlice({
       
       // Fetch my rooms
       .addCase(fetchMyRooms.fulfilled, (state, action) => {
-        console.log('fetchMyRooms fulfilled:', action.payload);
         state.myRooms = action.payload;
       })
       .addCase(fetchMyRooms.rejected, (state, action) => {
-        console.error('fetchMyRooms rejected:', action.payload);
         state.error = action.payload;
       });
   },

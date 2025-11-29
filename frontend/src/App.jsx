@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import Room from './pages/Room';
 import Profile from './pages/Profile';
 import { initializeSession } from './store/slices/authSlice';
 
@@ -45,6 +46,7 @@ function App() {
         <main className="flex-1 py-8 px-6">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/room/:roomId" element={<Room />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
