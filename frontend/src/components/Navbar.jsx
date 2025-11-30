@@ -38,6 +38,12 @@ const Navbar = () => {
               >
                 Profile
               </Link>
+              <Link 
+                to="/moderator" 
+                className="text-[var(--text-secondary)] hover:text-white transition-colors"
+              >
+                Moderator
+              </Link>
               <span className="text-[var(--accent)] font-medium">
                 {user.anonymousId}
               </span>

@@ -1,7 +1,29 @@
-import { useSelector } from 'react-redux';
+import { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import api from '../services/api';
+import { updateUser } from '../store/slices/authSlice';
 
 const Profile = () => {
   const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
+
+  // Manual refresh user data
+  const refreshUserData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      // Fetch user by ID to get updated reputation
+      const response = await api.get(`/users/${user._id}`);
+      console.log('Refreshed user data:', response.data);
+      dispatch(updateUser(response.data.data.user));
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -16,8 +38,17 @@ const Profile = () => {
       <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
         <div className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] p-12 flex justify-between items-center">
           <h1 className="text-3xl font-bold">Your Profile</h1>
-          <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-medium">
-            Anonymous User
+          <div className="flex items-center gap-4">
+            <button
+              onClick={refreshUserData}
+              disabled={loading}
+              className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Refreshing...' : '🔄 Refresh'}
+            </button>
+            <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-medium">
+              Anonymous User
+            </div>
           </div>
         </div>
 
@@ -83,21 +114,48 @@ const Profile = () => {
           </div>
 
           <div className="mt-8 pt-8 border-t border-[var(--border)]">
-            <h2 className="text-xl mb-4 text-[var(--text-secondary)]">How Reputation Works</h2>
+            <h2 className="text-xl mb-4 text-[var(--text-secondary)]">How to Earn Points</h2>
             <div className="grid gap-3 text-sm">
               <div className="flex items-start gap-3">
-                <span className="text-xl">⭐</span>
+                <span className="text-xl">💬</span>
                 <div>
-                  <div className="font-medium mb-1">Earn Points</div>
+                  <div className="font-medium mb-1">Send Messages (+1 point)</div>
                   <div className="text-[var(--text-secondary)]">
-                    Other users can give you reputation points for helpful messages
+                    Post messages in rooms to earn 1 point each
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-xl">👍</span>
+                <div>
+                  <div className="font-medium mb-1">React to Messages (+0.5 points)</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Give reactions to earn 0.5 points each
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-xl">❤️</span>
+                <div>
+                  <div className="font-medium mb-1">Receive Reactions (+1 point)</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Get 1 point when someone reacts to your message
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-xl">📨</span>
+                <div>
+                  <div className="font-medium mb-1">Send DMs (+0.5 points)</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Send private messages to earn 0.5 points each
                   </div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <span className="text-xl">📈</span>
                 <div>
-                  <div className="font-medium mb-1">Level Up</div>
+                  <div className="font-medium mb-1">Level Up (Every 50 points)</div>
                   <div className="text-[var(--text-secondary)]">
                     Every 100 points = 1 level increase
                   </div>

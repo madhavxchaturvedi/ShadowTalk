@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
 import { contentFilter } from '../middleware/contentFilter.js';
+import { awardPoints } from '../utils/reputation.js';
 
 const router = express.Router();
 
@@ -185,6 +186,9 @@ router.post('/:userId', authMiddleware, contentFilter, async (req, res) => {
       sender: req.user.id,
       receiver: userId,
     });
+
+    // Award reputation points for sending DM
+    await awardPoints(req.user.id, 'dm_sent', message._id);
 
     await message.populate('sender', '_id anonymousId reputation');
     await message.populate('receiver', '_id anonymousId reputation');

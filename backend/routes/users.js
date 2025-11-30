@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { getReputationSummary, getLeaderboard } from '../utils/reputation.js';
 
 const router = express.Router();
 
@@ -129,6 +130,53 @@ router.get('/blocked/list', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch blocked users',
+    });
+  }
+});
+
+// GET /api/users/:userId/reputation - Get user's reputation summary
+router.get('/:userId/reputation', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const summary = await getReputationSummary(userId);
+    
+    if (!summary) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error) {
+    console.error('Get reputation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reputation',
+    });
+  }
+});
+
+// GET /api/users/leaderboard/top - Get top users by reputation
+router.get('/leaderboard/top', authMiddleware, async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    
+    const leaderboard = await getLeaderboard(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: { leaderboard },
+    });
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch leaderboard',
     });
   }
 });

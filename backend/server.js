@@ -9,6 +9,7 @@ import compression from 'compression';
 import connectDB from './config/mongodb.js';
 import errorHandler from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import logger from './utils/logger.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -155,7 +156,13 @@ io.on('connection', (socket) => {
 
 // Start server
 httpServer.listen(PORT, () => {
-  console.log(`🚀 ShadowTalk server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+  logger.success(`ShadowTalk server running on port ${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+  
+  if (!process.env.OPENAI_API_KEY) {
+    logger.warn('OPENAI_API_KEY not set - AI moderation disabled, using basic keyword filter only');
+  } else {
+    logger.success('AI moderation enabled with OpenAI');
+  }
 });

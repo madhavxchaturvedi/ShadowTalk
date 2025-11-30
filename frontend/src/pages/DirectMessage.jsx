@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
 import { socket } from '../services/socket';
 import ReportModal from '../components/ReportModal';
+import { updateUser } from '../store/slices/authSlice';
 
 const DirectMessage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -120,6 +122,15 @@ const DirectMessage = () => {
       setMessages((prev) => 
         prev.map((msg) => msg._id === tempMessage._id ? res.data.data.message : msg)
       );
+
+      // Refresh user data to get updated reputation points
+      try {
+        const userResponse = await api.get(`/users/${user._id}`);
+        console.log('✅ Updated user reputation (DM):', userResponse.data.data.user.reputation);
+        dispatch(updateUser(userResponse.data.data.user));
+      } catch (repError) {
+        console.error('Failed to update reputation display:', repError);
+      }
     } catch (error) {
       console.error('Send DM error:', error);
       // Remove failed message

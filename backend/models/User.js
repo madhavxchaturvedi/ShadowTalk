@@ -41,6 +41,16 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Room',
   }],
+  suspended: {
+    type: Boolean,
+    default: false,
+  },
+  suspendedAt: {
+    type: Date,
+  },
+  suspendedReason: {
+    type: String,
+  },
   isActive: {
     type: Boolean,
     default: true,

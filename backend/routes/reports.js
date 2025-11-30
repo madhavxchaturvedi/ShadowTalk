@@ -52,14 +52,27 @@ router.get('/', authMiddleware, async (req, res) => {
 
     const query = status ? { status } : {};
 
-    const reports = await Report.find(query)
+    let reports = await Report.find(query)
       .populate('reporter', '_id anonymousId reputation')
-      .populate('reportedUser', '_id anonymousId reputation')
-      .populate('reportedMessage')
+      .populate('reportedUser', '_id anonymousId reputation suspended suspendedAt suspendedReason')
       .populate('reviewedBy', '_id anonymousId')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .skip(parseInt(skip));
+      .skip(parseInt(skip))
+      .lean(); // Convert to plain JS objects
+
+    // Manually populate reportedMessage with sender based on messageType
+    for (let report of reports) {
+      if (report.reportedMessage && report.messageType) {
+        const Model = report.messageType === 'Message' 
+          ? (await import('../models/Message.js')).default
+          : (await import('../models/PrivateMessage.js')).default;
+        
+        report.reportedMessage = await Model.findById(report.reportedMessage)
+          .populate('sender', '_id anonymousId')
+          .lean();
+      }
+    }
 
     const total = await Report.countDocuments(query);
 
@@ -93,7 +106,7 @@ router.get('/my-reports', authMiddleware, async (req, res) => {
 router.patch('/:reportId', authMiddleware, async (req, res) => {
   try {
     const { reportId } = req.params;
-    const { status, moderatorNotes } = req.body;
+    const { status, action, moderatorNotes } = req.body;
 
     if (!['reviewed', 'resolved', 'dismissed'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
@@ -102,6 +115,26 @@ router.patch('/:reportId', authMiddleware, async (req, res) => {
     const report = await Report.findById(reportId);
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // If action is 'delete', handle based on report type
+    if (action === 'delete') {
+      if (report.reportedMessage && report.messageType) {
+        // Delete the reported message
+        const Model = report.messageType === 'Message' 
+          ? (await import('../models/Message.js')).default
+          : (await import('../models/PrivateMessage.js')).default;
+        
+        await Model.findByIdAndDelete(report.reportedMessage);
+      } else {
+        // User-only report: suspend the user
+        const User = (await import('../models/User.js')).default;
+        await User.findByIdAndUpdate(report.reportedUser._id || report.reportedUser, {
+          suspended: true,
+          suspendedAt: new Date(),
+          suspendedReason: report.reason
+        });
+      }
     }
 
     report.status = status;
@@ -120,6 +153,39 @@ router.patch('/:reportId', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error updating report:', error);
     res.status(500).json({ error: 'Failed to update report' });
+  }
+});
+
+// Unsuspend user (for moderators)
+router.post('/unsuspend/:userId', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        suspended: false,
+        $unset: { suspendedAt: '', suspendedReason: '' }
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      message: 'User unsuspended successfully',
+      user: {
+        _id: user._id,
+        anonymousId: user.anonymousId,
+        suspended: user.suspended
+      }
+    });
+  } catch (error) {
+    console.error('Error unsuspending user:', error);
+    res.status(500).json({ error: 'Failed to unsuspend user' });
   }
 });
 

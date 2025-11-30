@@ -8,6 +8,7 @@ import Room from './pages/Room';
 import DMList from './pages/DMList';
 import DirectMessage from './pages/DirectMessage';
 import Profile from './pages/Profile';
+import ModeratorDashboard from './pages/ModeratorDashboard';
 import { initializeSession } from './store/slices/authSlice';
 import { socket } from './services/socket';
 
@@ -87,6 +88,7 @@ function App() {
               <Route path="/dms" element={<DMList />} />
               <Route path="/dm/:userId" element={<DirectMessage />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/moderator" element={<ModeratorDashboard />} />
             </Routes>
           </main>
         </div>

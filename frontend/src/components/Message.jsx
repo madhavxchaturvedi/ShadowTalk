@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { socket } from '../services/socket';
 import ReactionPicker from './ReactionPicker';
+import ReportModal from './ReportModal';
+import { updateUser } from '../store/slices/authSlice';
 
 const Message = ({ message, onReply, isReply = false }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [reactions, setReactions] = useState(message.reactions || []);
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState([]);
@@ -22,9 +26,20 @@ const Message = ({ message, onReply, isReply = false }) => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleReactionUpdate = (data) => {
+    const handleReactionUpdate = async (data) => {
       if (data.messageId === message._id) {
         setReactions(data.reactions);
+        
+        // If this is user's own message, refresh reputation (received reaction: +1 point)
+        if (message.sender._id === user._id) {
+          try {
+            const userResponse = await api.get(`/users/${user._id}`);
+            console.log('✅ Updated user reputation (received reaction):', userResponse.data.data.user.reputation);
+            dispatch(updateUser(userResponse.data.data.user));
+          } catch (repError) {
+            console.error('Failed to update reputation display:', repError);
+          }
+        }
       }
     };
 
@@ -48,6 +63,15 @@ const Message = ({ message, onReply, isReply = false }) => {
     try {
       const res = await api.post(`/messages/${message._id}/react`, { emoji });
       setReactions(res.data.data.reactions);
+      
+      // Refresh user data to get updated reputation points (gave reaction: +0.5 points)
+      try {
+        const userResponse = await api.get(`/users/${user._id}`);
+        console.log('✅ Updated user reputation (gave reaction):', userResponse.data.data.user.reputation);
+        dispatch(updateUser(userResponse.data.data.user));
+      } catch (repError) {
+        console.error('Failed to update reputation display:', repError);
+      }
     } catch (error) {
       console.error('React error:', error);
     }
@@ -148,14 +172,34 @@ const Message = ({ message, onReply, isReply = false }) => {
                 💬 Reply
               </button>
               {!isOwnMessage && message.sender?._id && (
-                <button
-                  onClick={() => navigate(`/dm/${message.sender._id}`)}
-                  className="hover:opacity-100 transition-opacity"
-                >
-                  📨 DM
-                </button>
+                <>
+                  <button
+                    onClick={() => navigate(`/dm/${message.sender._id}`)}
+                    className="hover:opacity-100 transition-opacity"
+                  >
+                    📨 DM
+                  </button>
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="hover:opacity-100 transition-opacity text-red-400"
+                  >
+                    🚨 Report
+                  </button>
+                </>
               )}
             </div>
+          )}
+
+          {/* Report Modal */}
+          {showReportModal && (
+            <ReportModal
+              isOpen={showReportModal}
+              onClose={() => setShowReportModal(false)}
+              reportedMessageId={message._id}
+              messageType="Message"
+              reportedUserId={message.sender._id}
+              reportedUserName={message.sender.anonymousId}
+            />
           )}
 
           {/* Reaction Picker */}

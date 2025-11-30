@@ -4,6 +4,7 @@ import Room from '../models/Room.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
 import { contentFilter } from '../middleware/contentFilter.js';
+import { awardPoints } from '../utils/reputation.js';
 
 const router = express.Router();
 
@@ -114,6 +115,9 @@ router.post('/:roomId', authMiddleware, contentFilter, async (req, res) => {
       room: roomId,
     });
 
+    // Award reputation points for posting message
+    await awardPoints(req.user.id, 'message_posted', message._id);
+
     // Update room's last activity and message count
     await Room.findByIdAndUpdate(roomId, {
       lastActivity: new Date(),
@@ -167,6 +171,8 @@ router.post('/:messageId/react', authMiddleware, async (req, res) => {
 
     // Find existing reaction for this emoji
     const reactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
+    let reactionAdded = false;
+    let reactionRemoved = false;
 
     if (reactionIndex > -1) {
       // Reaction exists - toggle user
@@ -175,6 +181,7 @@ router.post('/:messageId/react', authMiddleware, async (req, res) => {
       if (userIndex > -1) {
         // Remove user's reaction
         message.reactions[reactionIndex].users.splice(userIndex, 1);
+        reactionRemoved = true;
         // Remove reaction if no users left
         if (message.reactions[reactionIndex].users.length === 0) {
           message.reactions.splice(reactionIndex, 1);
@@ -182,6 +189,7 @@ router.post('/:messageId/react', authMiddleware, async (req, res) => {
       } else {
         // Add user's reaction
         message.reactions[reactionIndex].users.push(req.user.id);
+        reactionAdded = true;
       }
     } else {
       // Create new reaction
@@ -189,9 +197,21 @@ router.post('/:messageId/react', authMiddleware, async (req, res) => {
         emoji,
         users: [req.user.id],
       });
+      reactionAdded = true;
     }
 
     await message.save();
+
+    // Award reputation points
+    if (reactionAdded) {
+      // User who gave the reaction gets 0.5 points
+      await awardPoints(req.user.id, 'reaction_given', message._id);
+      
+      // Message author gets 1 point for receiving reaction
+      if (message.sender.toString() !== req.user.id) {
+        await awardPoints(message.sender, 'reaction_received', message._id);
+      }
+    }
 
     // Broadcast reaction update via Socket.io
     const io = req.app.get('io');

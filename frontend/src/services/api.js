@@ -28,7 +28,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 403 && error.response?.data?.suspended) {
+      // User is suspended
+      alert(`Your account has been suspended.\nReason: ${error.response.data.suspendedReason || 'Violation of community guidelines'}`);
+      // Optionally redirect or show suspended page
+    } else if (error.response?.status === 401) {
       // Token expired or invalid - clear local storage
       localStorage.removeItem('shadowtalk_token');
       localStorage.removeItem('shadowtalk_user');

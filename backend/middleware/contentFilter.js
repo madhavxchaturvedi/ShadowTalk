@@ -1,4 +1,6 @@
-// Content moderation middleware - keyword-based filtering
+import { checkContentSafety } from './aiModeration.js';
+
+// Content moderation middleware - combined AI + keyword filtering
 const bannedKeywords = [
   // Offensive/hate speech
   'fuck', 'shit', 'bitch', 'asshole', 'bastard',
@@ -9,18 +11,35 @@ const bannedKeywords = [
   'buy now', 'click here', 'limited time', 'free money',
 ];
 
-const checkContent = (content) => {
+const checkContent = async (content) => {
   if (!content) return { clean: true };
 
   const lowerContent = content.toLowerCase();
   
-  // Check for banned keywords
+  // OpenAI AI moderation - DISABLED for now (uncomment when ready for production)
+  // if (process.env.OPENAI_API_KEY) {
+  //   try {
+  //     const aiResult = await checkContentSafety(content);
+  //     if (!aiResult.safe) {
+  //       return {
+  //         clean: false,
+  //         reason: aiResult.reason,
+  //         flaggedBy: 'ai',
+  //       };
+  //     }
+  //   } catch (error) {
+  //     console.error('AI moderation failed, falling back to keyword filter:', error);
+  //   }
+  // }
+  
+  // Keyword filtering (primary moderation)
   for (const keyword of bannedKeywords) {
     if (lowerContent.includes(keyword)) {
       return {
         clean: false,
         reason: 'inappropriate_content',
         keyword,
+        flaggedBy: 'keyword',
       };
     }
   }
@@ -32,6 +51,7 @@ const checkContent = (content) => {
       clean: false,
       reason: 'spam',
       keyword: 'EXCESSIVE_CAPS',
+      flaggedBy: 'spam_detection',
     };
   }
 
@@ -41,26 +61,31 @@ const checkContent = (content) => {
       clean: false,
       reason: 'spam',
       keyword: 'REPEATED_CHARS',
+      flaggedBy: 'spam_detection',
     };
   }
 
   return { clean: true };
 };
 
-const contentFilter = (req, res, next) => {
+// Middleware for content filtering
+const contentFilter = async (req, res, next) => {
   const { content } = req.body;
 
   if (!content) {
     return next();
   }
 
-  const check = checkContent(content);
+  const check = await checkContent(content);
 
   if (!check.clean) {
+    console.log(`🚫 Content blocked: ${check.reason} (${check.flaggedBy})`);
     return res.status(400).json({
-      error: 'Your message contains inappropriate content or spam',
+      success: false,
+      message: 'Your message contains inappropriate content or spam',
       reason: check.reason,
-      detail: `Detected: ${check.keyword}`,
+      flaggedBy: check.flaggedBy,
+      detail: check.keyword ? `Detected: ${check.keyword}` : undefined,
     });
   }
 

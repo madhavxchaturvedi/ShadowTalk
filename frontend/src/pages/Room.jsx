@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
 import { socket, connectSocket, disconnectSocket } from '../services/socket';
 import Message from '../components/Message';
+import { updateUser } from '../store/slices/authSlice';
 
 const Room = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -80,6 +82,16 @@ const Room = () => {
     try {
       // Save to database - backend will broadcast via Socket.io
       await api.post(`/messages/${roomId}`, { content: newMessage });
+
+      // Refresh user data to get updated reputation points
+      try {
+        const userResponse = await api.get(`/users/${user._id}`);
+        console.log('✅ Updated user reputation:', userResponse.data.data.user.reputation);
+        dispatch(updateUser(userResponse.data.data.user));
+      } catch (repError) {
+        console.error('Failed to update reputation display:', repError);
+        // Don't block message sending if reputation update fails
+      }
 
       setNewMessage('');
     } catch (error) {

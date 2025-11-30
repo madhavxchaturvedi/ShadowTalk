@@ -32,6 +32,17 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // Check if user is suspended
+    if (user.suspended) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account has been suspended.',
+        suspended: true,
+        suspendedReason: user.suspendedReason,
+        suspendedAt: user.suspendedAt
+      });
+    }
+
     // Update last seen
     user.lastSeen = new Date();
     await user.save();
