@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './components/Navbar';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Room from './pages/Room';
 import DMList from './pages/DMList';
@@ -70,20 +71,22 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 py-8 px-6">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/room/:roomId" element={<Room />} />
-            <Route path="/dms" element={<DMList />} />
-            <Route path="/dm/:userId" element={<DirectMessage />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1 py-8 px-6">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/room/:roomId" element={<Room />} />
+              <Route path="/dms" element={<DMList />} />
+              <Route path="/dm/:userId" element={<DirectMessage />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

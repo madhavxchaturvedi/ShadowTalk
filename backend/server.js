@@ -3,6 +3,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import compression from 'compression';
 import connectDB from './config/mongodb.js';
 import errorHandler from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -13,6 +16,7 @@ import roomRoutes from './routes/rooms.js';
 import messageRoutes from './routes/messages.js';
 import dmRoutes from './routes/dms.js';
 import userRoutes from './routes/users.js';
+import reportRoutes from './routes/reports.js';
 import migrateRoutes from './routes/migrate.js';
 
 // Load environment variables
@@ -37,13 +41,23 @@ connectDB();
 app.set('io', io);
 app.set('userSockets', new Map());
 
-// Middleware
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for Socket.io compatibility
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(mongoSanitize()); // Prevent MongoDB injection
+app.use(compression()); // Compress responses
+
+// CORS Configuration
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body Parser Middleware
+app.use(express.json({ limit: '10kb' })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
@@ -53,6 +67,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     success: true, 
     message: 'ShadowTalk API is running',
+    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
 });
@@ -63,6 +78,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/dms', dmRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/migrate', migrateRoutes);
 
 // 404 handler

@@ -3,6 +3,7 @@ import PrivateMessage from '../models/PrivateMessage.js';
 import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
+import { contentFilter } from '../middleware/contentFilter.js';
 
 const router = express.Router();
 
@@ -133,7 +134,7 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 });
 
 // POST /api/dms/:userId - Send a DM
-router.post('/:userId', authMiddleware, async (req, res) => {
+router.post('/:userId', authMiddleware, contentFilter, async (req, res) => {
   try {
     const { userId } = req.params;
     const { content } = req.body;

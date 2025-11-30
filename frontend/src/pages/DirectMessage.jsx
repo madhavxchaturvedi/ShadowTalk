@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import { socket } from '../services/socket';
+import ReportModal from '../components/ReportModal';
 
 const DirectMessage = () => {
   const { userId } = useParams();
@@ -13,6 +14,8 @@ const DirectMessage = () => {
   const [otherUser, setOtherUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
@@ -147,7 +150,7 @@ const DirectMessage = () => {
           >
             ← Back
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold">
               {otherUser?.anonymousId || 'Direct Message'}
             </h1>
@@ -156,6 +159,46 @@ const DirectMessage = () => {
                 Level {otherUser.reputation.level} • {otherUser.reputation.points} points
               </p>
             )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="px-4 py-2 bg-[var(--bg-tertiary)] rounded-lg hover:bg-opacity-80 transition-colors text-sm"
+            >
+              🚨 Report
+            </button>
+            <button
+              onClick={async () => {
+                if (isBlocked) {
+                  if (confirm('Unblock this user?')) {
+                    try {
+                      await api.post(`/users/${userId}/unblock`);
+                      setIsBlocked(false);
+                      alert('User unblocked');
+                    } catch (error) {
+                      alert(error.response?.data?.message || 'Failed to unblock');
+                    }
+                  }
+                } else {
+                  if (confirm('Block this user? You will not receive messages from them.')) {
+                    try {
+                      await api.post(`/users/${userId}/block`);
+                      setIsBlocked(true);
+                      alert('User blocked');
+                    } catch (error) {
+                      alert(error.response?.data?.message || 'Failed to block');
+                    }
+                  }
+                }
+              }}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                isBlocked
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-red-500 hover:bg-red-600'
+              }`}
+            >
+              {isBlocked ? '✓ Unblock' : '🚫 Block'}
+            </button>
           </div>
         </div>
       </div>
@@ -200,6 +243,13 @@ const DirectMessage = () => {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        reportedUserId={userId}
+        reportedUserName={otherUser?.anonymousId}
+      />
 
       <div className="bg-[var(--bg-secondary)] border-t border-[var(--border)] px-4 py-4">
         <div className="container mx-auto max-w-4xl">

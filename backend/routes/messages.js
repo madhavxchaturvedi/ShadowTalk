@@ -3,6 +3,7 @@ import Message from '../models/Message.js';
 import Room from '../models/Room.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
+import { contentFilter } from '../middleware/contentFilter.js';
 
 const router = express.Router();
 
@@ -71,7 +72,7 @@ router.get('/:roomId', authMiddleware, async (req, res) => {
 });
 
 // POST /api/messages/:roomId - Send a message (for fallback when Socket.io unavailable)
-router.post('/:roomId', authMiddleware, async (req, res) => {
+router.post('/:roomId', authMiddleware, contentFilter, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { content } = req.body;
