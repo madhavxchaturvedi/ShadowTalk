@@ -6,7 +6,7 @@ import RoomCard from '../components/RoomCard';
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   const { allRooms, loading, filters } = useSelector((state) => state.rooms);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -16,11 +16,20 @@ const Home = () => {
     'Mental Health', 'Relationships', 'Career', 'Hobbies', 'Other'
   ];
 
-  // Fetch rooms and user's joined rooms on mount
+  // Fetch rooms and user's joined rooms ONLY when authenticated
   useEffect(() => {
-    dispatch(fetchRooms(filters));
-    dispatch(fetchMyRooms());
-  }, [dispatch, filters]);
+    if (isAuthenticated) {
+      dispatch(fetchRooms(filters));
+      dispatch(fetchMyRooms());
+    }
+  }, [dispatch, isAuthenticated]); // Removed filters from dependencies to prevent infinite loop
+
+  // Refetch when filters change
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchRooms(filters));
+    }
+  }, [dispatch, filters, isAuthenticated]);
 
   const handleTopicChange = (topic) => {
     dispatch(setFilters({ topic }));

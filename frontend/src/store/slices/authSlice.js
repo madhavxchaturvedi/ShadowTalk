@@ -12,30 +12,44 @@ export const initializeSession = createAsyncThunk(
       // If we have both token and user in localStorage, trust it without validation
       // This prevents unnecessary API calls on every page refresh
       if (existingToken && existingUser) {
+        console.log('✅ Using cached session from localStorage');
         return { user: existingUser, token: existingToken };
       }
 
       // If we have token but no user, validate it
       if (existingToken) {
         try {
+          console.log('🔄 Validating existing token...');
           const result = await authService.joinSession(existingToken);
           if (result.success) {
+            console.log('✅ Token validated successfully');
             return { user: result.user, token: existingToken };
           }
         } catch (err) {
           // Token validation failed, clear it and create new session
+          console.log('❌ Token validation failed, clearing...');
           authService.logout();
         }
       }
 
       // Create new session
+      console.log('🆕 Creating new session...');
       const result = await authService.createSession();
       if (result.success) {
+        console.log('✅ New session created successfully');
         return { user: result.user, token: result.token };
       }
 
       return rejectWithValue('Failed to create session');
     } catch (error) {
+      console.error('❌ Session initialization error:', error);
+      // If rate limited or network error, try to use cached data if available
+      const existingToken = authService.getToken();
+      const existingUser = authService.getCurrentUser();
+      if (existingToken && existingUser) {
+        console.log('⚠️ Using cached session due to error');
+        return { user: existingUser, token: existingToken };
+      }
       return rejectWithValue(error.message);
     }
   }

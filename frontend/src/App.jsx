@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './components/Navbar';
@@ -14,9 +14,14 @@ import { socket } from './services/socket';
 function App() {
   const dispatch = useDispatch();
   const { loading, error, user } = useSelector((state) => state.auth);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    dispatch(initializeSession());
+    // Only initialize once to prevent infinite loops
+    if (!initialized.current) {
+      initialized.current = true;
+      dispatch(initializeSession());
+    }
   }, [dispatch]);
 
   // Register user for DM delivery when user is available
