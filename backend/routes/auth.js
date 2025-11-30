@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
@@ -48,6 +49,7 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
       data: {
         token,
         user: {
+          _id: user._id,
           anonymousId: user.anonymousId,
           reputation: user.reputation,
           createdAt: user.createdAt,
@@ -100,6 +102,7 @@ router.post('/join-session', async (req, res, next) => {
       message: 'Session rejoined successfully',
       data: {
         user: {
+          _id: user._id,
           anonymousId: user.anonymousId,
           reputation: user.reputation,
           createdAt: user.createdAt,
@@ -115,6 +118,89 @@ router.post('/join-session', async (req, res, next) => {
       });
     }
     next(error);
+  }
+});
+
+// POST /api/auth/give-reputation - Give reputation points to another user
+router.post('/give-reputation', authMiddleware, async (req, res) => {
+  try {
+    const { userId, points, reason } = req.body;
+
+    if (!userId || !points) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and points are required',
+      });
+    }
+
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot give reputation to yourself',
+      });
+    }
+
+    if (points < 1 || points > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Points must be between 1 and 10',
+      });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Update reputation
+    targetUser.reputation.points += points;
+    
+    // Calculate level (every 100 points = 1 level)
+    targetUser.reputation.level = Math.floor(targetUser.reputation.points / 100) + 1;
+
+    // Award badges
+    const badges = [
+      { name: 'Newcomer', threshold: 10 },
+      { name: 'Regular', threshold: 50 },
+      { name: 'Veteran', threshold: 100 },
+      { name: 'Legend', threshold: 500 },
+      { name: 'Master', threshold: 1000 },
+    ];
+
+    for (const badge of badges) {
+      if (
+        targetUser.reputation.points >= badge.threshold &&
+        !targetUser.reputation.badges.some(b => b.name === badge.name)
+      ) {
+        targetUser.reputation.badges.push({
+          name: badge.name,
+          earnedAt: new Date(),
+        });
+      }
+    }
+
+    await targetUser.save();
+
+    res.json({
+      success: true,
+      message: 'Reputation given successfully',
+      data: {
+        user: {
+          _id: targetUser._id,
+          anonymousId: targetUser.anonymousId,
+          reputation: targetUser.reputation,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Give reputation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to give reputation',
+    });
   }
 });
 

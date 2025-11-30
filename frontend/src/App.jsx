@@ -4,16 +4,46 @@ import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Room from './pages/Room';
+import DMList from './pages/DMList';
+import DirectMessage from './pages/DirectMessage';
 import Profile from './pages/Profile';
 import { initializeSession } from './store/slices/authSlice';
+import { socket } from './services/socket';
 
 function App() {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.auth);
+  const { loading, error, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(initializeSession());
   }, [dispatch]);
+
+  // Register user for DM delivery when user is available
+  useEffect(() => {
+    console.log('🔍 DM Registration Effect - User:', user, 'User ID:', user?._id);
+    
+    if (!user?._id) {
+      console.log('⏸️  Skipping DM registration - no user ID');
+      return;
+    }
+
+    const registerUser = () => {
+      console.log('📧 Attempting to register user for DMs:', user._id, 'Socket connected:', socket.connected);
+      socket.emit('join_dm_session', user._id);
+    };
+
+    // Register immediately if connected
+    if (socket.connected) {
+      registerUser();
+    }
+
+    // Also listen for connect events (in case socket reconnects)
+    socket.on('connect', registerUser);
+
+    return () => {
+      socket.off('connect', registerUser);
+    };
+  }, [user?._id]);
 
   if (loading) {
     return (
@@ -47,6 +77,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/room/:roomId" element={<Room />} />
+            <Route path="/dms" element={<DMList />} />
+            <Route path="/dm/:userId" element={<DirectMessage />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>

@@ -71,7 +71,7 @@ const Profile = () => {
                     key={index} 
                     className="bg-[var(--accent)] text-white px-4 py-2 rounded-full text-sm font-medium"
                   >
-                    {badge}
+                    🏆 {badge.name}
                   </div>
                 ))
               ) : (
@@ -79,6 +79,39 @@ const Profile = () => {
                   No badges yet. Start participating to earn badges!
                 </p>
               )}
+            </div>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-[var(--border)]">
+            <h2 className="text-xl mb-4 text-[var(--text-secondary)]">How Reputation Works</h2>
+            <div className="grid gap-3 text-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⭐</span>
+                <div>
+                  <div className="font-medium mb-1">Earn Points</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Other users can give you reputation points for helpful messages
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-xl">📈</span>
+                <div>
+                  <div className="font-medium mb-1">Level Up</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Every 100 points = 1 level increase
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-xl">🏆</span>
+                <div>
+                  <div className="font-medium mb-1">Unlock Badges</div>
+                  <div className="text-[var(--text-secondary)]">
+                    Newcomer (10), Regular (50), Veteran (100), Legend (500), Master (1000)
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

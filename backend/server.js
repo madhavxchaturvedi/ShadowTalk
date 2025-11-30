@@ -11,6 +11,8 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 import authRoutes from './routes/auth.js';
 import roomRoutes from './routes/rooms.js';
 import messageRoutes from './routes/messages.js';
+import dmRoutes from './routes/dms.js';
+import userRoutes from './routes/users.js';
 import migrateRoutes from './routes/migrate.js';
 
 // Load environment variables
@@ -30,6 +32,10 @@ const PORT = process.env.PORT || 3001;
 
 // Connect to MongoDB
 connectDB();
+
+// Make io and userSockets accessible to routes
+app.set('io', io);
+app.set('userSockets', new Map());
 
 // Middleware
 app.use(cors({
@@ -55,6 +61,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/dms', dmRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/migrate', migrateRoutes);
 
 // 404 handler
@@ -71,6 +79,20 @@ app.use(errorHandler);
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('👤 User connected:', socket.id);
+  console.log('🔗 Transport:', socket.conn.transport.name);
+
+  // Debug: Log all received events
+  socket.onAny((eventName, ...args) => {
+    console.log(`📥 Received event: ${eventName}`, args);
+  });
+
+  // Join DM session (map user ID to socket ID)
+  socket.on('join_dm_session', (userId) => {
+    const userSockets = app.get('userSockets');
+    userSockets.set(userId, socket.id);
+    console.log(`📧 User ${userId} registered for DMs with socket ${socket.id}`);
+    console.log(`📊 Total registered users: ${userSockets.size}`);
+  });
 
   // Join room
   socket.on('join_room', (roomId) => {
@@ -84,24 +106,8 @@ io.on('connection', (socket) => {
     console.log(`📤 User ${socket.id} left room ${roomId}`);
   });
 
-  // Send message
-  socket.on('send_message', async (data) => {
-    try {
-      const { content, roomId, userId, anonymousId } = data;
-      
-      // Broadcast message to room
-      io.to(roomId).emit('new_message', {
-        content,
-        sender: { _id: userId, anonymousId },
-        room: roomId,
-        createdAt: new Date(),
-        _id: Date.now().toString(), // Temporary ID until saved to DB
-      });
-    } catch (error) {
-      console.error('Socket message error:', error);
-      socket.emit('message_error', { message: 'Failed to send message' });
-    }
-  });
+  // Send message - handled by REST API, no need for socket handler
+  // The POST /messages/:roomId endpoint will broadcast via io.to(roomId).emit('new_message')
 
   // Typing indicator
   socket.on('typing', (data) => {
@@ -119,6 +125,15 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('👋 User disconnected:', socket.id);
+    // Clean up user-socket mapping
+    const userSockets = app.get('userSockets');
+    for (const [userId, socketId] of userSockets.entries()) {
+      if (socketId === socket.id) {
+        userSockets.delete(userId);
+        console.log(`🗑️  Removed DM session for user ${userId}`);
+        break;
+      }
+    }
   });
 });
 

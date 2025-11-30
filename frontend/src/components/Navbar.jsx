@@ -27,6 +27,12 @@ const Navbar = () => {
           {user && (
             <>
               <Link 
+                to="/dms" 
+                className="text-[var(--text-secondary)] hover:text-white transition-colors"
+              >
+                Messages
+              </Link>
+              <Link 
                 to="/profile" 
                 className="text-[var(--text-secondary)] hover:text-white transition-colors"
               >

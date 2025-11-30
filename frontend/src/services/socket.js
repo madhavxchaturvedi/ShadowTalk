@@ -2,23 +2,35 @@ import { io } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export let socket = null;
+// Auto-connect socket on import
+export const socket = io(SOCKET_URL, {
+  autoConnect: true,
+});
+
+socket.on('connect', () => {
+  console.log('✅ Socket connected:', socket.id);
+  console.log('🔗 Socket transport:', socket.io.engine.transport.name);
+});
+
+socket.on('disconnect', (reason) => {
+  console.log('❌ Socket disconnected:', reason);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('❌ Socket connection error:', error);
+});
+
+// Debug: Log all emitted events
+const originalEmit = socket.emit;
+socket.emit = function(...args) {
+  console.log('📤 Emitting socket event:', args[0], 'Data:', args[1]);
+  return originalEmit.apply(this, args);
+};
 
 export const connectSocket = () => {
-  if (!socket) {
-    socket = io(SOCKET_URL, {
-      autoConnect: true,
-    });
-
-    socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket.id);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
-    });
+  if (!socket.connected) {
+    socket.connect();
   }
-  
   return socket;
 };
 

@@ -37,7 +37,7 @@ router.get('/:roomId', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
-      .populate('sender', 'anonymousId reputation')
+      .populate('sender', '_id anonymousId reputation')
       .lean();
 
     // Reverse to show oldest first
@@ -120,7 +120,15 @@ router.post('/:roomId', authMiddleware, async (req, res) => {
     });
 
     // Populate sender info
-    await message.populate('sender', 'anonymousId reputation');
+    await message.populate('sender', '_id anonymousId reputation');
+
+    // Broadcast to all room members via Socket.io
+    const io = req.app.get('io');
+    if (io) {
+      io.to(roomId).emit('new_message', {
+        ...message.toObject(),
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -131,6 +139,152 @@ router.post('/:roomId', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to send message',
+    });
+  }
+});
+
+// POST /api/messages/:messageId/react - Add or remove reaction
+router.post('/:messageId/react', authMiddleware, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    if (!emoji) {
+      return res.status(400).json({
+        success: false,
+        message: 'Emoji is required',
+      });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found',
+      });
+    }
+
+    // Find existing reaction for this emoji
+    const reactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
+
+    if (reactionIndex > -1) {
+      // Reaction exists - toggle user
+      const userIndex = message.reactions[reactionIndex].users.indexOf(req.user.id);
+      
+      if (userIndex > -1) {
+        // Remove user's reaction
+        message.reactions[reactionIndex].users.splice(userIndex, 1);
+        // Remove reaction if no users left
+        if (message.reactions[reactionIndex].users.length === 0) {
+          message.reactions.splice(reactionIndex, 1);
+        }
+      } else {
+        // Add user's reaction
+        message.reactions[reactionIndex].users.push(req.user.id);
+      }
+    } else {
+      // Create new reaction
+      message.reactions.push({
+        emoji,
+        users: [req.user.id],
+      });
+    }
+
+    await message.save();
+
+    // Broadcast reaction update via Socket.io
+    const io = req.app.get('io');
+    io.to(message.room.toString()).emit('message_reacted', {
+      messageId: message._id,
+      reactions: message.reactions,
+    });
+
+    res.json({
+      success: true,
+      data: { reactions: message.reactions },
+    });
+  } catch (error) {
+    console.error('React to message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to react to message',
+    });
+  }
+});
+
+// GET /api/messages/:messageId/replies - Get replies to a message
+router.get('/:messageId/replies', authMiddleware, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const replies = await Message.find({
+      parentMessage: messageId,
+      isDeleted: false,
+    })
+      .sort({ createdAt: 1 })
+      .populate('sender', '_id anonymousId reputation')
+      .lean();
+
+    res.json({
+      success: true,
+      data: { replies },
+    });
+  } catch (error) {
+    console.error('Get replies error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch replies',
+    });
+  }
+});
+
+// POST /api/messages/:messageId/reply - Reply to a message
+router.post('/:messageId/reply', authMiddleware, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reply content is required',
+      });
+    }
+
+    const parentMessage = await Message.findById(messageId);
+    if (!parentMessage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Parent message not found',
+      });
+    }
+
+    // Create reply
+    const reply = await Message.create({
+      content: sanitizeInput(content),
+      sender: req.user.id,
+      room: parentMessage.room,
+      parentMessage: messageId,
+    });
+
+    await reply.populate('sender', '_id anonymousId reputation');
+
+    // Broadcast new reply via Socket.io
+    const io = req.app.get('io');
+    io.to(parentMessage.room.toString()).emit('new_reply', {
+      parentMessageId: messageId,
+      reply: reply.toObject(),
+    });
+
+    res.status(201).json({
+      success: true,
+      data: { reply },
+    });
+  } catch (error) {
+    console.error('Reply to message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reply to message',
     });
   }
 });

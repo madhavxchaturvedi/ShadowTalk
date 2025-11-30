@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import { socket, connectSocket, disconnectSocket } from '../services/socket';
+import Message from '../components/Message';
 
 const Room = () => {
   const { roomId } = useParams();
@@ -77,15 +78,7 @@ const Room = () => {
 
     setSending(true);
     try {
-      // Send via Socket.io for real-time
-      socket.emit('send_message', {
-        content: newMessage,
-        roomId,
-        userId: user._id,
-        anonymousId: user.anonymousId,
-      });
-
-      // Also save to database
+      // Save to database - backend will broadcast via Socket.io
       await api.post(`/messages/${roomId}`, { content: newMessage });
 
       setNewMessage('');
@@ -136,31 +129,7 @@ const Room = () => {
             </div>
           ) : (
             messages.map((message) => (
-              <div
-                key={message._id}
-                className={`flex ${
-                  message.sender._id === user._id ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-md px-4 py-3 rounded-lg ${
-                    message.sender._id === user._id
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-secondary)] border border-[var(--border)]'
-                  }`}
-                >
-                  <div className="text-xs opacity-75 mb-1">
-                    {message.sender.anonymousId}
-                  </div>
-                  <div className="break-words">{message.content}</div>
-                  <div className="text-xs opacity-60 mt-1">
-                    {new Date(message.createdAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
-              </div>
+              <Message key={message._id} message={message} />
             ))
           )}
           <div ref={messagesEndRef} />
