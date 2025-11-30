@@ -1,9 +1,9 @@
 import rateLimit from 'express-rate-limit';
 
-// General API rate limiter - 300 requests per 15 minutes (allows for page refreshes)
+// General API rate limiter - 1000 requests per 15 minutes (very generous for production)
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
+  max: 1000,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -13,10 +13,10 @@ export const apiLimiter = rateLimit({
   skip: (req) => req.path === '/health', // Don't rate limit health checks
 });
 
-// Auth endpoints rate limiter - 30 requests per 15 minutes (allows validation on refresh)
+// Auth endpoints rate limiter - 100 requests per 15 minutes (allows validation on refresh)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30,
+  max: 100,
   message: {
     success: false,
     message: 'Too many session creation attempts, please try again later.',
