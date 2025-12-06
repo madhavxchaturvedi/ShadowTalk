@@ -120,17 +120,24 @@ const Message = ({ message, onReply, isReply = false }) => {
         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
       >
         <div
-          className={`max-w-md px-4 py-3 rounded-lg relative ${
-            isOwnMessage
-              ? 'bg-[var(--accent)] text-white'
-              : 'bg-[var(--bg-secondary)] border border-[var(--border)]'
-          }`}
+          style={{
+            maxWidth: '65%',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            background: isOwnMessage ? 'var(--accent)' : '#1f1f1f',
+            color: 'white',
+            position: 'relative',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+            border: isOwnMessage ? 'none' : '1px solid #2a2a2a'
+          }}
         >
-          <div className="text-xs opacity-75 mb-1">
+          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', fontWeight: '500' }}>
             {message.sender.anonymousId}
           </div>
-          <div className="break-words whitespace-pre-wrap">{message.content}</div>
-          <div className="text-xs opacity-60 mt-1">
+          <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+            {message.content}
+          </div>
+          <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '6px', textAlign: 'right' }}>
             {new Date(message.createdAt).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -139,16 +146,26 @@ const Message = ({ message, onReply, isReply = false }) => {
 
           {/* Reactions */}
           {reactions.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
               {reactions.map((reaction, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleReact(reaction.emoji)}
-                  className={`text-sm px-2 py-1 rounded-full ${
-                    reaction.users.includes(user._id)
-                      ? 'bg-[var(--accent)]/30 border border-[var(--accent)]'
-                      : 'bg-[var(--bg-tertiary)] border border-[var(--border)]'
-                  }`}
+                  style={{
+                    fontSize: '13px',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: reaction.users.includes(user._id) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                    border: reaction.users.includes(user._id) ? '1px solid var(--accent)' : '1px solid #2a2a2a',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = reaction.users.includes(user._id) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)'}
                 >
                   {reaction.emoji} {reaction.users.length}
                 </button>
@@ -158,16 +175,20 @@ const Message = ({ message, onReply, isReply = false }) => {
 
           {/* Action buttons */}
           {!isReply && (
-            <div className="flex gap-2 mt-2 text-xs opacity-60">
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '12px', opacity: 0.65 }}>
               <button
                 onClick={() => setShowReactionPicker(!showReactionPicker)}
-                className="hover:opacity-100 transition-opacity"
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
               >
                 😊 React
               </button>
               <button
                 onClick={loadReplies}
-                className="hover:opacity-100 transition-opacity"
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
               >
                 💬 Reply
               </button>
@@ -175,13 +196,17 @@ const Message = ({ message, onReply, isReply = false }) => {
                 <>
                   <button
                     onClick={() => navigate(`/dm/${message.sender._id}`)}
-                    className="hover:opacity-100 transition-opacity"
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
                   >
                     📨 DM
                   </button>
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className="hover:opacity-100 transition-opacity text-red-400"
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
                   >
                     🚨 Report
                   </button>

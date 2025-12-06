@@ -27,16 +27,22 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="text-center py-8 text-[var(--text-secondary)]">
+      <div className="page-wrapper" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-secondary)' }}>
         Loading profile...
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 mt-8 max-w-7xl">
+    <div className="page-wrapper" style={{ padding: '32px' }}>
       <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] p-12 flex justify-between items-center">
+        <div style={{ 
+          background: 'linear-gradient(to right, var(--accent), var(--accent-hover))', 
+          padding: '48px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
           <h1 className="text-3xl font-bold">Your Profile</h1>
           <div className="flex items-center gap-4">
             <button

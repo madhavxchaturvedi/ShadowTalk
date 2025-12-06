@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchRooms, fetchMyRooms, setFilters } from '../store/slices/roomsSlice';
 import CreateRoomModal from '../components/CreateRoomModal';
 import RoomCard from '../components/RoomCard';
+import { HiHome, HiPlus } from 'react-icons/hi2';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -40,36 +41,35 @@ const Home = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 mt-8 max-w-7xl">
+    <>
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="main-header">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Discover Rooms</h1>
-          <p className="text-[var(--text-secondary)]">Join anonymous communities and start chatting</p>
+          <h1>Discover Rooms</h1>
+          <p>Join anonymous communities and start chatting</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors font-medium"
+          className="create-room-btn"
         >
-          + Create Room
+          <HiPlus style={{ fontSize: '20px' }} />
+          <span>Create Room</span>
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-6 mb-6">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-64">
-            <label className="block text-sm font-medium mb-2">Filter by Topic</label>
-            <div className="flex flex-wrap gap-2">
+      <div className="main-body">
+
+
+        {/* Filters */}
+        <div className="filter-section">
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '12px', textTransform: 'uppercase' }}>Filter by Topic</label>
+            <div className="filter-chips">
               {topics.map(topic => (
                 <button
                   key={topic}
                   onClick={() => handleTopicChange(topic)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filters.topic === topic
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white'
-                  }`}
+                  className={`filter-chip ${filters.topic === topic ? 'active' : ''}`}
                 >
                   {topic.charAt(0).toUpperCase() + topic.slice(1)}
                 </button>
@@ -77,12 +77,12 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="w-48">
-            <label className="block text-sm font-medium mb-2">Sort By</label>
+          <div style={{ width: '200px' }}>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '12px', textTransform: 'uppercase' }}>Sort By</label>
             <select
               value={filters.sort}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white focus:outline-none focus:border-[var(--accent)]"
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white', fontSize: '14px', cursor: 'pointer' }}
             >
               <option value="trending">Trending</option>
               <option value="popular">Most Popular</option>
@@ -91,40 +91,42 @@ const Home = () => {
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Room List */}
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
-        </div>
-      ) : allRooms.length === 0 ? (
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-12 text-center">
-          <h3 className="text-xl font-bold mb-2">No rooms found</h3>
-          <p className="text-[var(--text-secondary)] mb-6">
-            Be the first to create a room in this category!
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
-          >
-            Create First Room
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {allRooms.map(room => (
-            <RoomCard key={room._id} room={room} />
-          ))}
-        </div>
-      )}
+        {/* Room List */}
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 20px' }}>
+            <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
+          </div>
+        ) : allRooms.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', marginTop: '24px' }}>
+            <HiHome style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
+            <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>No rooms found</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
+              Be the first to create a room in this category!
+            </p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              style={{ padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <HiPlus style={{ fontSize: '18px' }} />
+              Create First Room
+            </button>
+          </div>
+        ) : (
+          <div className="rooms-grid">
+            {allRooms.map(room => (
+              <RoomCard key={room._id} room={room} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Create Room Modal */}
       <CreateRoomModal 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)} 
       />
-    </div>
+    </>
   );
 };
 

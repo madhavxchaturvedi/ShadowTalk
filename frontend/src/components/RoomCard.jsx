@@ -32,45 +32,36 @@ const RoomCard = ({ room }) => {
   };
 
   return (
-    <div 
-      className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-6 hover:border-[var(--accent)] transition-colors cursor-pointer"
-      onClick={handleOpenRoom}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-bold mb-2">{room.name}</h3>
-          <p className="text-[var(--text-secondary)] text-sm line-clamp-2">
-            {room.description || 'No description'}
-          </p>
+    <div className="room-card" onClick={handleOpenRoom}>
+      <div className="room-header">
+        <div className="room-icon">
+          {room.icon || '💬'}
         </div>
-        <span className="bg-[var(--accent)]/20 text-[var(--accent)] px-3 py-1 rounded-full text-xs font-medium ml-3">
-          {room.topic}
-        </span>
+        <div className="room-info">
+          <h3 className="room-title">{room.name}</h3>
+          <span className="room-topic">{room.topic}</span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4 text-sm text-[var(--text-secondary)]">
-          <span className="flex items-center gap-1">
-            👥 {room.memberCount} {room.memberCount === 1 ? 'member' : 'members'}
-          </span>
-          <span className="flex items-center gap-1">
-            💬 {room.messageCount} messages
-          </span>
-        </div>
+      <p className="room-description">
+        {room.description || 'Join this room to start chatting with the community'}
+      </p>
 
+      <div className="room-meta">
+        <div className="room-stats">
+          <span>👥 {room.memberCount || 0}</span>
+          <span>💬 {room.messageCount || 0}</span>
+        </div>
+        
         <button
           onClick={(e) => {
             e.stopPropagation();
             handleJoinLeave();
           }}
           disabled={isLoading}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-            isMember
-              ? 'bg-[var(--bg-tertiary)] border border-[var(--border)] hover:bg-red-500/20 hover:border-red-500 hover:text-red-400'
-              : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)]'
-          }`}
+          className={`room-join-btn ${isMember ? 'joined' : ''}`}
         >
-          {isLoading ? (isMember ? 'Leaving...' : 'Joining...') : (isMember ? 'Leave' : 'Join')}
+          {isLoading ? (isMember ? 'Leaving...' : 'Joining...') : (isMember ? 'Joined' : 'Join')}
         </button>
       </div>
     </div>

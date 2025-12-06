@@ -79,9 +79,9 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <div className="min-h-screen flex flex-col">
+        <div className="app-container">
           <Navbar />
-          <main className="flex-1 py-8 px-6">
+          <main className="main-content">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/room/:roomId" element={<Room />} />

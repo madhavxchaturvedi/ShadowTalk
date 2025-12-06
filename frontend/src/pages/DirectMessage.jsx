@@ -145,102 +145,118 @@ const DirectMessage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
         <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="bg-[var(--bg-secondary)] border-b border-[var(--border)] px-6 py-4">
-        <div className="container mx-auto max-w-7xl flex items-center gap-4">
+    <div className="room-page">
+      <div className="room-header">
+        <button
+          onClick={() => navigate('/dms')}
+          className="back-button"
+        >
+          ← Back
+        </button>
+        <div className="room-info" style={{ flex: 1 }}>
+          <h1>
+            {otherUser?.anonymousId || 'Direct Message'}
+          </h1>
+          {otherUser && (
+            <p>
+              Level {otherUser.reputation.level} • {otherUser.reputation.points} points
+            </p>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            onClick={() => navigate('/dms')}
-            className="text-[var(--text-secondary)] hover:text-white transition-colors"
+            onClick={() => setShowReportModal(true)}
+            style={{ 
+              padding: '8px 16px', 
+              background: 'var(--bg-tertiary)', 
+              border: 'none', 
+              borderRadius: '8px',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s ease'
+            }}
           >
-            ← Back
+            🚨 Report
           </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">
-              {otherUser?.anonymousId || 'Direct Message'}
-            </h1>
-            {otherUser && (
-              <p className="text-sm text-[var(--text-secondary)]">
-                Level {otherUser.reputation.level} • {otherUser.reputation.points} points
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="px-4 py-2 bg-[var(--bg-tertiary)] rounded-lg hover:bg-opacity-80 transition-colors text-sm"
-            >
-              🚨 Report
-            </button>
-            <button
-              onClick={async () => {
-                if (isBlocked) {
-                  if (confirm('Unblock this user?')) {
-                    try {
-                      await api.post(`/users/${userId}/unblock`);
-                      setIsBlocked(false);
-                      alert('User unblocked');
-                    } catch (error) {
-                      alert(error.response?.data?.message || 'Failed to unblock');
-                    }
-                  }
-                } else {
-                  if (confirm('Block this user? You will not receive messages from them.')) {
-                    try {
-                      await api.post(`/users/${userId}/block`);
-                      setIsBlocked(true);
-                      alert('User blocked');
-                    } catch (error) {
-                      alert(error.response?.data?.message || 'Failed to block');
-                    }
+          <button
+            onClick={async () => {
+              if (isBlocked) {
+                if (confirm('Unblock this user?')) {
+                  try {
+                    await api.post(`/users/${userId}/unblock`);
+                    setIsBlocked(false);
+                    alert('User unblocked');
+                  } catch (error) {
+                    alert(error.response?.data?.message || 'Failed to unblock');
                   }
                 }
-              }}
-              className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                isBlocked
-                  ? 'bg-green-500 hover:bg-green-600'
-                  : 'bg-red-500 hover:bg-red-600'
-              }`}
-            >
-              {isBlocked ? '✓ Unblock' : '🚫 Block'}
-            </button>
-          </div>
+              } else {
+                if (confirm('Block this user? You will not receive messages from them.')) {
+                  try {
+                    await api.post(`/users/${userId}/block`);
+                    setIsBlocked(true);
+                    alert('User blocked');
+                  } catch (error) {
+                    alert(error.response?.data?.message || 'Failed to block');
+                  }
+                }
+              }
+            }}
+            style={{ 
+              padding: '8px 16px', 
+              background: isBlocked ? '#10b981' : '#ef4444', 
+              border: 'none', 
+              borderRadius: '8px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {isBlocked ? '✓ Unblock' : '🚫 Block'}
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] px-4 py-6">
-        <div className="container mx-auto max-w-4xl space-y-4">
+      <div className="room-messages">
+        <div className="messages-container">
           {messages.length === 0 ? (
-            <div className="text-center text-[var(--text-secondary)] py-12">
+            <div className="empty-state">
               <p className="text-lg">No messages yet</p>
-              <p className="text-sm mt-2">Start the conversation!</p>
+              <p className="text-sm" style={{ marginTop: '8px' }}>Start the conversation!</p>
             </div>
           ) : (
             messages.map((msg) => (
               <div
                 key={msg._id}
-                className={`flex ${
-                  msg.sender._id === user._id ? 'justify-end' : 'justify-start'
-                }`}
+                style={{ 
+                  display: 'flex',
+                  justifyContent: msg.sender._id === user._id ? 'flex-end' : 'flex-start'
+                }}
               >
                 <div
-                  className={`max-w-md px-4 py-3 rounded-lg ${
-                    msg.sender._id === user._id
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--bg-secondary)] border border-[var(--border)]'
-                  }`}
+                  style={{
+                    maxWidth: '60%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: msg.sender._id === user._id ? 'var(--accent)' : 'var(--bg-secondary)',
+                    border: msg.sender._id === user._id ? 'none' : '1px solid var(--border)',
+                    color: msg.sender._id === user._id ? 'white' : 'var(--text-primary)'
+                  }}
                 >
-                  <div className="text-xs opacity-75 mb-1">
+                  <div style={{ fontSize: '12px', opacity: 0.75, marginBottom: '4px' }}>
                     {msg.sender.anonymousId}
                   </div>
-                  <div className="break-words whitespace-pre-wrap">{msg.content}</div>
-                  <div className="text-xs opacity-60 mt-1">
+                  <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
                     {new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -250,7 +266,6 @@ const DirectMessage = () => {
               </div>
             ))
           )}
-          {/* Invisible element to scroll to */}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -262,27 +277,25 @@ const DirectMessage = () => {
         reportedUserName={otherUser?.anonymousId}
       />
 
-      <div className="bg-[var(--bg-secondary)] border-t border-[var(--border)] px-4 py-4">
-        <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSendMessage} className="flex gap-3">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              disabled={sending}
-              className="flex-1 px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50"
-              maxLength={2000}
-            />
-            <button
-              type="submit"
-              disabled={!newMessage.trim() || sending}
-              className="px-6 py-3 bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-          </form>
-        </div>
+      <div className="room-input">
+        <form onSubmit={handleSendMessage} className="message-form">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            disabled={sending}
+            className="message-input"
+            maxLength={2000}
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending}
+            className="send-button"
+          >
+            {sending ? 'Sending...' : 'Send'}
+          </button>
+        </form>
       </div>
     </div>
   );

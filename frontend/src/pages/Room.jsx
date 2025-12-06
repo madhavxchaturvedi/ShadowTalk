@@ -103,41 +103,37 @@ const Room = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
         <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="room-page">
       {/* Room Header */}
-      <div className="bg-[var(--bg-secondary)] border-b border-[var(--border)] px-6 py-4">
-        <div className="container mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-[var(--text-secondary)] hover:text-white transition-colors"
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold">{room?.name}</h1>
-              <p className="text-sm text-[var(--text-secondary)]">
-                {room?.memberCount} members • {room?.topic}
-              </p>
-            </div>
-          </div>
+      <div className="room-header">
+        <button
+          onClick={() => navigate('/')}
+          className="back-button"
+        >
+          ← Back
+        </button>
+        <div className="room-info">
+          <h1>{room?.name}</h1>
+          <p>
+            {room?.memberCount} members • {room?.topic}
+          </p>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] px-4 py-6">
-        <div className="container mx-auto max-w-4xl space-y-4">
+      <div className="room-messages">
+        <div className="messages-container">
           {messages.length === 0 ? (
-            <div className="text-center text-[var(--text-secondary)] py-12">
+            <div className="empty-state">
               <p className="text-lg">No messages yet</p>
-              <p className="text-sm mt-2">Be the first to start the conversation!</p>
+              <p className="text-sm" style={{ marginTop: '8px' }}>Be the first to start the conversation!</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -149,27 +145,25 @@ const Room = () => {
       </div>
 
       {/* Message Input */}
-      <div className="bg-[var(--bg-secondary)] border-t border-[var(--border)] px-4 py-4">
-        <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSendMessage} className="flex gap-3">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              disabled={sending}
-              className="flex-1 px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50"
-              maxLength={2000}
-            />
-            <button
-              type="submit"
-              disabled={!newMessage.trim() || sending}
-              className="px-6 py-3 bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-          </form>
-        </div>
+      <div className="room-input">
+        <form onSubmit={handleSendMessage} className="message-form">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            disabled={sending}
+            className="message-input"
+            maxLength={2000}
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending}
+            className="send-button"
+          >
+            {sending ? 'Sending...' : 'Send'}
+          </button>
+        </form>
       </div>
     </div>
   );

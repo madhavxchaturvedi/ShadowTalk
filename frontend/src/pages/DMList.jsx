@@ -26,28 +26,38 @@ const DMList = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
         <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 mt-8 max-w-4xl">
-      <div className="flex justify-between items-center mb-8">
+    <div className="page-wrapper">
+      <div className="main-header">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Direct Messages</h1>
-          <p className="text-[var(--text-secondary)]">Private conversations</p>
+          <h1>Direct Messages</h1>
+          <p>Private conversations</p>
         </div>
         <button
           onClick={() => navigate('/')}
-          className="px-6 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg hover:border-[var(--accent)] transition-colors font-medium"
+          style={{ 
+            padding: '12px 24px', 
+            background: 'var(--bg-secondary)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '12px',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.borderColor = 'var(--accent)'}
+          onMouseLeave={(e) => e.target.style.borderColor = 'var(--border)'}
         >
           Back to Rooms
         </button>
       </div>
 
-      {conversations.length === 0 ? (
+      <div className="main-body">{conversations.length === 0 ? (
         <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-12 text-center">
           <h3 className="text-xl font-bold mb-2">No conversations yet</h3>
           <p className="text-[var(--text-secondary)]">
@@ -91,6 +101,7 @@ const DMList = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };

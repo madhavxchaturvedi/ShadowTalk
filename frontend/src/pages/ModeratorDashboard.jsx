@@ -66,15 +66,15 @@ const ModeratorDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 mt-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Moderation Dashboard</h1>
-        <p className="text-[var(--text-secondary)]">
-          Review and manage reported content
-        </p>
+    <div className="page-wrapper">
+      <div className="main-header">
+        <div>
+          <h1>Moderation Dashboard</h1>
+          <p>Review and manage reported content</p>
+        </div>
       </div>
 
-      {/* Filter Tabs */}
+      <div className="main-body">{/* Filter Tabs */}
       <div className="flex gap-2 mb-6 border-b border-[var(--border)]">
         {['pending', 'resolved', 'all'].map((tab) => (
           <button
@@ -193,6 +193,7 @@ const ModeratorDashboard = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };
