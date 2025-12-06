@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import ModeratorDashboard from './pages/ModeratorDashboard';
 import { initializeSession } from './store/slices/authSlice';
 import { socket } from './services/socket';
+import { startKeepAlive, stopKeepAlive } from './utils/keepAlive';
 
 function App() {
   const dispatch = useDispatch();
@@ -24,6 +25,14 @@ function App() {
       dispatch(initializeSession());
     }
   }, [dispatch]);
+
+  // Start keep-alive service to prevent Render from spinning down
+  useEffect(() => {
+    startKeepAlive();
+    return () => {
+      stopKeepAlive();
+    };
+  }, []);
 
   // Register user for DM delivery when user is available
   useEffect(() => {

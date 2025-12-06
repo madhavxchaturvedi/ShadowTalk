@@ -18,7 +18,9 @@ const DirectMessage = () => {
   const [sending, setSending] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [connectionSlow, setConnectionSlow] = useState(false);
   const messagesEndRef = useRef(null);
+  const slowConnectionTimerRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -102,39 +104,63 @@ const DirectMessage = () => {
     if (!newMessage.trim() || sending) return;
 
     const messageContent = newMessage.trim();
-    setNewMessage('');
-    setSending(true);
-
+    const tempId = `temp-${Date.now()}`;
+    
     // Optimistically add message to UI
     const tempMessage = {
-      _id: `temp-${Date.now()}`,
+      _id: tempId,
       content: messageContent,
       sender: { _id: user._id, anonymousId: user.anonymousId },
       receiver: { _id: userId, anonymousId: otherUser?.anonymousId },
       createdAt: new Date().toISOString(),
       isRead: false,
+      isPending: true, // Mark as pending
     };
+    
     setMessages((prev) => [...prev, tempMessage]);
+    setNewMessage('');
+    setSending(true);
+
+    // Start slow connection timer (3 seconds)
+    slowConnectionTimerRef.current = setTimeout(() => {
+      setConnectionSlow(true);
+    }, 3000);
 
     try {
       const res = await api.post(`/dms/${userId}`, { content: messageContent });
+      
+      // Clear slow connection warning
+      if (slowConnectionTimerRef.current) {
+        clearTimeout(slowConnectionTimerRef.current);
+      }
+      setConnectionSlow(false);
+      
       // Replace temp message with real one
       setMessages((prev) => 
-        prev.map((msg) => msg._id === tempMessage._id ? res.data.data.message : msg)
+        prev.map((msg) => msg._id === tempId ? res.data.data.message : msg)
       );
 
-      // Refresh user data to get updated reputation points
-      try {
-        const userResponse = await api.get(`/users/${user._id}`);
-        console.log('✅ Updated user reputation (DM):', userResponse.data.data.user.reputation);
-        dispatch(updateUser(userResponse.data.data.user));
-      } catch (repError) {
-        console.error('Failed to update reputation display:', repError);
-      }
+      // Update reputation in background (non-blocking)
+      api.get(`/users/${user._id}`)
+        .then(userResponse => {
+          dispatch(updateUser(userResponse.data.data.user));
+        })
+        .catch(err => console.error('Failed to update reputation:', err));
+
     } catch (error) {
       console.error('Send DM error:', error);
+      
+      // Clear slow connection warning
+      if (slowConnectionTimerRef.current) {
+        clearTimeout(slowConnectionTimerRef.current);
+      }
+      setConnectionSlow(false);
+      
       // Remove failed message
-      setMessages((prev) => prev.filter((msg) => msg._id !== tempMessage._id));
+      setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
+      
+      // Restore message text so user can retry
+      setNewMessage(messageContent);
       
       const errorMsg = error.response?.data?.message || 'Failed to send message';
       alert(errorMsg);
@@ -249,11 +275,14 @@ const DirectMessage = () => {
                     borderRadius: '12px',
                     background: msg.sender._id === user._id ? 'var(--accent)' : 'var(--bg-secondary)',
                     border: msg.sender._id === user._id ? 'none' : '1px solid var(--border)',
-                    color: msg.sender._id === user._id ? 'white' : 'var(--text-primary)'
+                    color: msg.sender._id === user._id ? 'white' : 'var(--text-primary)',
+                    opacity: msg.isPending ? 0.6 : 1,
+                    transition: 'opacity 0.3s ease'
                   }}
                 >
                   <div style={{ fontSize: '12px', opacity: 0.75, marginBottom: '4px' }}>
                     {msg.sender.anonymousId}
+                    {msg.isPending && <span style={{ marginLeft: '6px', fontSize: '10px' }}>⏳ Sending...</span>}
                   </div>
                   <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                   <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
@@ -278,6 +307,19 @@ const DirectMessage = () => {
       />
 
       <div className="room-input">
+        {connectionSlow && (
+          <div style={{
+            padding: '8px 16px',
+            backgroundColor: 'rgba(251, 191, 36, 0.1)',
+            borderLeft: '3px solid #fbbf24',
+            marginBottom: '8px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            color: '#fbbf24',
+          }}>
+            ⚠️ Server is waking up... This may take 30-60 seconds on first request.
+          </div>
+        )}
         <form onSubmit={handleSendMessage} className="message-form">
           <input
             type="text"

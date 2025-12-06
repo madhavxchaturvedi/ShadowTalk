@@ -16,7 +16,9 @@ const Room = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [connectionSlow, setConnectionSlow] = useState(false);
   const messagesEndRef = useRef(null);
+  const slowConnectionTimerRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -78,24 +80,71 @@ const Room = () => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
 
+    const messageContent = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - show message immediately
+    const optimisticMessage = {
+      _id: tempId,
+      content: messageContent,
+      sender: {
+        _id: user._id,
+        anonymousId: user.anonymousId,
+        reputation: user.reputation,
+      },
+      room: roomId,
+      createdAt: new Date().toISOString(),
+      reactions: [],
+      isPending: true, // Mark as pending
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage('');
     setSending(true);
+
+    // Start slow connection timer (3 seconds)
+    slowConnectionTimerRef.current = setTimeout(() => {
+      setConnectionSlow(true);
+    }, 3000);
+
     try {
       // Save to database - backend will broadcast via Socket.io
-      await api.post(`/messages/${roomId}`, { content: newMessage });
-
-      // Refresh user data to get updated reputation points
-      try {
-        const userResponse = await api.get(`/users/${user._id}`);
-        console.log('✅ Updated user reputation:', userResponse.data.data.user.reputation);
-        dispatch(updateUser(userResponse.data.data.user));
-      } catch (repError) {
-        console.error('Failed to update reputation display:', repError);
-        // Don't block message sending if reputation update fails
+      const response = await api.post(`/messages/${roomId}`, { content: messageContent });
+      
+      // Clear slow connection warning
+      if (slowConnectionTimerRef.current) {
+        clearTimeout(slowConnectionTimerRef.current);
       }
+      setConnectionSlow(false);
 
-      setNewMessage('');
+      // Replace optimistic message with real one
+      setMessages((prev) => 
+        prev.map(msg => msg._id === tempId ? response.data.data.message : msg)
+      );
+
+      // Update reputation in background (non-blocking)
+      api.get(`/users/${user._id}`)
+        .then(userResponse => {
+          dispatch(updateUser(userResponse.data.data.user));
+        })
+        .catch(err => console.error('Failed to update reputation:', err));
+
     } catch (error) {
       console.error('Send message error:', error);
+      
+      // Clear slow connection warning
+      if (slowConnectionTimerRef.current) {
+        clearTimeout(slowConnectionTimerRef.current);
+      }
+      setConnectionSlow(false);
+      
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter(msg => msg._id !== tempId));
+      
+      // Restore message text so user can retry
+      setNewMessage(messageContent);
+      
+      alert('Failed to send message. Please check your connection and try again.');
     } finally {
       setSending(false);
     }
@@ -146,6 +195,19 @@ const Room = () => {
 
       {/* Message Input */}
       <div className="room-input">
+        {connectionSlow && (
+          <div style={{
+            padding: '8px 16px',
+            backgroundColor: 'rgba(251, 191, 36, 0.1)',
+            borderLeft: '3px solid #fbbf24',
+            marginBottom: '8px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            color: '#fbbf24',
+          }}>
+            ⚠️ Server is waking up... This may take 30-60 seconds on first request.
+          </div>
+        )}
         <form onSubmit={handleSendMessage} className="message-form">
           <input
             type="text"

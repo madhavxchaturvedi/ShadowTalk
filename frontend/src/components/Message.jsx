@@ -128,11 +128,14 @@ const Message = ({ message, onReply, isReply = false }) => {
             color: 'white',
             position: 'relative',
             boxShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-            border: isOwnMessage ? 'none' : '1px solid #2a2a2a'
+            border: isOwnMessage ? 'none' : '1px solid #2a2a2a',
+            opacity: message.isPending ? 0.6 : 1,
+            transition: 'opacity 0.3s ease'
           }}
         >
           <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', fontWeight: '500' }}>
             {message.sender.anonymousId}
+            {message.isPending && <span style={{ marginLeft: '6px', fontSize: '10px' }}>⏳ Sending...</span>}
           </div>
           <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
             {message.content}
