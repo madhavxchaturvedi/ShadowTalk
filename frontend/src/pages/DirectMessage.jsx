@@ -77,16 +77,30 @@ const DirectMessage = () => {
 
     const handleNewDM = (data) => {
       const msg = data.message;
-      // Only add if it's for this conversation and not already in the list
+      // Only add if it's for this conversation
       if (
         (msg.sender._id === userId && msg.receiver._id === user._id) ||
         (msg.sender._id === user._id && msg.receiver._id === userId)
       ) {
         setMessages((prev) => {
           // Check if message already exists (avoid duplicates)
-          if (prev.some((m) => m._id === msg._id)) {
+          const exists = prev.some((m) => m._id === msg._id);
+          if (exists) {
             return prev;
           }
+          
+          // Replace pending message with confirmed one if it matches
+          const hasPending = prev.some(m => 
+            m.isPending && m.content === msg.content && m.sender._id === msg.sender._id
+          );
+          if (hasPending) {
+            return prev.map(m => 
+              m.isPending && m.content === msg.content && m.sender._id === msg.sender._id 
+                ? msg 
+                : m
+            );
+          }
+          
           return [...prev, msg];
         });
       }
@@ -135,10 +149,16 @@ const DirectMessage = () => {
       }
       setConnectionSlow(false);
       
-      // Replace temp message with real one
-      setMessages((prev) => 
-        prev.map((msg) => msg._id === tempId ? res.data.data.message : msg)
-      );
+      // Replace temp message with real one (if not already replaced by socket)
+      setMessages((prev) => {
+        const hasRealMessage = prev.some(msg => msg._id === res.data.data.message._id);
+        if (hasRealMessage) {
+          // Socket already added it, just remove temp
+          return prev.filter(msg => msg._id !== tempId);
+        }
+        // Replace temp with real
+        return prev.map((msg) => msg._id === tempId ? res.data.data.message : msg);
+      });
 
       // Update reputation in background (non-blocking)
       api.get(`/users/${user._id}`)

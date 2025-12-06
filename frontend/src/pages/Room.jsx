@@ -62,7 +62,19 @@ const Room = () => {
 
     // Listen for new messages
     socket.on('new_message', (message) => {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // Check if message already exists (avoid duplicates)
+        const exists = prev.some(msg => msg._id === message._id);
+        if (exists) {
+          // Replace pending message with confirmed one
+          return prev.map(msg => 
+            msg._id.startsWith('temp-') && msg.content === message.content && msg.sender._id === message.sender._id
+              ? message 
+              : msg
+          );
+        }
+        return [...prev, message];
+      });
     });
 
     return () => {
@@ -117,10 +129,16 @@ const Room = () => {
       }
       setConnectionSlow(false);
 
-      // Replace optimistic message with real one
-      setMessages((prev) => 
-        prev.map(msg => msg._id === tempId ? response.data.data.message : msg)
-      );
+      // Replace optimistic message with real one (if not already replaced by socket)
+      setMessages((prev) => {
+        const hasRealMessage = prev.some(msg => msg._id === response.data.data.message._id);
+        if (hasRealMessage) {
+          // Socket already added it, just remove temp
+          return prev.filter(msg => msg._id !== tempId);
+        }
+        // Replace temp with real
+        return prev.map(msg => msg._id === tempId ? response.data.data.message : msg);
+      });
 
       // Update reputation in background (non-blocking)
       api.get(`/users/${user._id}`)
