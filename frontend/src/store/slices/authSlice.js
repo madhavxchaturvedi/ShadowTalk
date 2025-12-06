@@ -8,6 +8,7 @@ export const initializeSession = createAsyncThunk(
     try {
       const existingToken = authService.getToken();
       const existingUser = authService.getCurrentUser();
+      const storedShadowId = authService.getShadowId();
 
       // If we have both token and user in localStorage, trust it without validation
       // This prevents unnecessary API calls on every page refresh
@@ -16,27 +17,21 @@ export const initializeSession = createAsyncThunk(
         return { user: existingUser, token: existingToken };
       }
 
-      // If we have token but no user, validate it
-      if (existingToken) {
-        try {
-          console.log('🔄 Validating existing token...');
-          const result = await authService.joinSession(existingToken);
-          if (result.success) {
-            console.log('✅ Token validated successfully');
-            return { user: result.user, token: existingToken };
-          }
-        } catch (err) {
-          // Token validation failed, clear it and create new session
-          console.log('❌ Token validation failed, clearing...');
-          authService.logout();
+      // Try to restore session with stored ShadowID (persistent identity)
+      if (storedShadowId) {
+        console.log('🔄 Restoring session with ShadowID:', storedShadowId);
+        const result = await authService.anonAuth(storedShadowId);
+        if (result.success) {
+          console.log('✅ ShadowID session restored');
+          return { user: result.user, token: result.token };
         }
       }
 
-      // Create new session
-      console.log('🆕 Creating new session...');
-      const result = await authService.createSession();
+      // Create new anonymous session with ShadowID
+      console.log('🆕 Creating new ShadowID session...');
+      const result = await authService.anonAuth();
       if (result.success) {
-        console.log('✅ New session created successfully');
+        console.log('✅ New ShadowID created:', result.user.shadowId);
         return { user: result.user, token: result.token };
       }
 

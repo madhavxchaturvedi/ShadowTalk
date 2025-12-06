@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { FiClock } from 'react-icons/fi';
 import api from '../services/api';
 import { socket } from '../services/socket';
 import ReportModal from '../components/ReportModal';
@@ -302,7 +303,11 @@ const DirectMessage = () => {
                 >
                   <div style={{ fontSize: '12px', opacity: 0.75, marginBottom: '4px' }}>
                     {msg.sender.anonymousId}
-                    {msg.isPending && <span style={{ marginLeft: '6px', fontSize: '10px' }}>⏳ Sending...</span>}
+                    {msg.isPending && (
+                      <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                        <FiClock className="w-3 h-3" /> Sending...
+                      </span>
+                    )}
                   </div>
                   <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                   <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>

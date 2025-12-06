@@ -54,11 +54,15 @@ const Navbar = () => {
         <div className="sidebar-footer">
           <div className="user-profile">
             <div className="user-avatar">
-              {user.anonymousId?.charAt(0).toUpperCase() || '?'}
+              {user.nickname?.charAt(0).toUpperCase() || user.shadowId?.charAt(6).toUpperCase() || user.anonymousId?.charAt(0).toUpperCase() || '?'}
             </div>
             <div className="user-info">
-              <div className="user-name">{user.anonymousId}</div>
-              <div className="user-status">Level {user.reputation?.level || 1}</div>
+              <div className="user-name">
+                {user.nickname || user.shadowId || user.anonymousId}
+              </div>
+              <div className="user-status">
+                {user.shadowId && user.nickname ? user.shadowId : `Level ${user.reputation?.level || 1}`}
+              </div>
             </div>
           </div>
           <button onClick={handleLogout} className="logout-btn">

@@ -2,20 +2,28 @@
 
 /* Custom CSS variables */
 :root {
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-tertiary: #141414;
-  --bg-surface: #1a1a1a;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --bg-surface: #1f1f1f;
   --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
   --accent: #10b981;
   --accent-hover: #059669;
   --accent-dark: #047857;
+  --accent-light: rgba(16, 185, 129, 0.1);
   --success: #10b981;
+  --success-light: rgba(16, 185, 129, 0.1);
   --danger: #ef4444;
-  --border: #1f1f1f;
-  --border-light: #2a2a2a;
+  --danger-light: rgba(239, 68, 68, 0.1);
+  --warning: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.1);
+  --info: #3b82f6;
+  --info-light: rgba(59, 130, 246, 0.1);
+  --border: #27272a;
+  --border-light: #3f3f46;
+  --shadow: rgba(0, 0, 0, 0.5);
 }
 
 body {

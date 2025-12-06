@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
+import { anonAuth } from '../services/auth';
 import { updateUser } from '../store/slices/authSlice';
 
 const Profile = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nickname, setNickname] = useState(user?.nickname || '');
+  const [savingNickname, setSavingNickname] = useState(false);
 
   // Manual refresh user data
   const refreshUserData = async () => {
@@ -22,6 +26,24 @@ const Profile = () => {
       console.error('Failed to refresh user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveNickname = async () => {
+    if (!nickname.trim() || savingNickname) return;
+
+    setSavingNickname(true);
+    try {
+      const result = await anonAuth(user.shadowId, nickname.trim());
+      if (result.success) {
+        dispatch(updateUser(result.user));
+        setEditingNickname(false);
+      }
+    } catch (error) {
+      console.error('Failed to update nickname:', error);
+      alert('Failed to update nickname');
+    } finally {
+      setSavingNickname(false);
     }
   };
 
@@ -62,6 +84,63 @@ const Profile = () => {
           <div className="mb-8">
             <h2 className="text-xl mb-4 text-[var(--text-secondary)]">Identity</h2>
             <div className="space-y-3">
+              {user.shadowId && (
+                <div className="flex justify-between py-3 border-b border-[var(--border)]">
+                  <span className="text-[var(--text-secondary)]">Shadow ID:</span>
+                  <span className="font-bold text-lg" style={{ color: 'var(--accent)', letterSpacing: '1px' }}>
+                    {user.shadowId}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
+                <span className="text-[var(--text-secondary)]">Nickname:</span>
+                {editingNickname ? (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value.slice(0, 20))}
+                      placeholder="Enter nickname..."
+                      maxLength={20}
+                      className="px-3 py-1 rounded border"
+                      style={{
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
+                      }}
+                    />
+                    <button
+                      onClick={handleSaveNickname}
+                      disabled={!nickname.trim() || savingNickname}
+                      className="px-3 py-1 rounded text-sm font-medium disabled:opacity-50"
+                      style={{ background: 'var(--accent)', color: 'white' }}
+                    >
+                      {savingNickname ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingNickname(false);
+                        setNickname(user.nickname || '');
+                      }}
+                      className="px-3 py-1 rounded text-sm"
+                      style={{ background: 'var(--bg-tertiary)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{user.nickname || 'Not set'}</span>
+                    <button
+                      onClick={() => setEditingNickname(true)}
+                      className="text-sm px-2 py-1 rounded"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="flex justify-between py-3 border-b border-[var(--border)]">
                 <span className="text-[var(--text-secondary)]">Anonymous ID:</span>
                 <span className="font-medium">{user.anonymousId}</span>

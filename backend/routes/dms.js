@@ -5,6 +5,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
 import { contentFilter } from '../middleware/contentFilter.js';
 import { awardPoints } from '../utils/reputation.js';
+import { antiSpamLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -135,7 +136,7 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 });
 
 // POST /api/dms/:userId - Send a DM
-router.post('/:userId', authMiddleware, contentFilter, async (req, res) => {
+router.post('/:userId', authMiddleware, antiSpamLimiter, contentFilter, async (req, res) => {
   try {
     const { userId } = req.params;
     const { content } = req.body;

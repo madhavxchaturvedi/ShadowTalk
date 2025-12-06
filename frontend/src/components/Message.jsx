@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { FiClock } from 'react-icons/fi';
 import api from '../services/api';
 import { socket } from '../services/socket';
 import ReactionPicker from './ReactionPicker';
@@ -134,8 +135,14 @@ const Message = ({ message, onReply, isReply = false }) => {
           }}
         >
           <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', fontWeight: '500' }}>
-            {message.sender.anonymousId}
-            {message.isPending && <span style={{ marginLeft: '6px', fontSize: '10px' }}>⏳ Sending...</span>}
+            {message.sender.nickname 
+              ? `${message.sender.nickname} (${message.sender.shadowId || message.sender.anonymousId})` 
+              : message.sender.shadowId || message.sender.anonymousId}
+            {message.isPending && (
+              <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                <FiClock className="w-3 h-3" /> Sending...
+              </span>
+            )}
           </div>
           <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
             {message.content}

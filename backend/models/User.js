@@ -1,6 +1,20 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  // Shadow Identity System
+  shadowId: {
+    type: String,
+    required: false, // Optional for backward compatibility with existing users
+    unique: true,
+    sparse: true, // Allows multiple null values
+    index: true,
+  },
+  nickname: {
+    type: String,
+    default: null,
+    maxlength: 20,
+    trim: true,
+  },
   anonymousId: {
     type: String,
     required: true,

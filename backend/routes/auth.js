@@ -6,6 +6,16 @@ import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
+// Generate Shadow ID (e.g., ShadowABC123)
+const generateShadowId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let shadowId = 'Shadow';
+  for (let i = 0; i < 6; i++) {
+    shadowId += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return shadowId;
+};
+
 // Generate random anonymous ID
 const generateAnonymousId = () => {
   const randomString = Math.random().toString(36).substring(2, 11);
@@ -18,6 +28,83 @@ const generateSessionId = () => {
 };
 
 /**
+ * POST /api/auth/anon
+ * Persistent ShadowID authentication - find or create user
+ * Supports auto-login and instant restore on refresh
+ */
+router.post('/anon', authLimiter, async (req, res, next) => {
+  try {
+    const { shadowId, nickname } = req.body;
+    let user;
+
+    // If shadowId provided, try to find existing user
+    if (shadowId) {
+      user = await User.findOne({ shadowId, isActive: true });
+      
+      if (user) {
+        // Update nickname if provided
+        if (nickname && nickname.trim() && nickname !== user.nickname) {
+          user.nickname = nickname.trim().substring(0, 20);
+        }
+        user.lastSeen = new Date();
+        await user.save();
+      }
+    }
+
+    // Create new user if not found
+    if (!user) {
+      const newShadowId = shadowId || generateShadowId();
+      const anonymousId = generateAnonymousId();
+      const sessionId = generateSessionId();
+
+      // Ensure unique shadowId
+      let uniqueShadowId = newShadowId;
+      let attempts = 0;
+      while (await User.findOne({ shadowId: uniqueShadowId }) && attempts < 10) {
+        uniqueShadowId = generateShadowId();
+        attempts++;
+      }
+
+      user = await User.create({
+        shadowId: uniqueShadowId,
+        nickname: nickname?.trim().substring(0, 20) || null,
+        anonymousId,
+        sessionId,
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        shadowId: user.shadowId,
+        anonymousId: user.anonymousId,
+        sessionId: user.sessionId,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' } // 90 days for persistent sessions
+    );
+
+    res.status(user.createdAt === user.updatedAt ? 201 : 200).json({
+      success: true,
+      message: user.createdAt === user.updatedAt ? 'ShadowID created' : 'Welcome back',
+      data: {
+        token,
+        user: {
+          _id: user._id,
+          shadowId: user.shadowId,
+          nickname: user.nickname,
+          anonymousId: user.anonymousId,
+          reputation: user.reputation,
+          createdAt: user.createdAt,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * POST /api/auth/create-session
  * Create a new anonymous session
  */
@@ -26,9 +113,11 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
     // Generate anonymous credentials
     const anonymousId = generateAnonymousId();
     const sessionId = generateSessionId();
+    const shadowId = generateShadowId();
 
     // Create user in database
     const user = await User.create({
+      shadowId,
       anonymousId,
       sessionId,
     });
@@ -36,6 +125,7 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
+        shadowId: user.shadowId,
         anonymousId: user.anonymousId,
         sessionId: user.sessionId,
       },
@@ -50,6 +140,7 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
         token,
         user: {
           _id: user._id,
+          shadowId: user.shadowId,
           anonymousId: user.anonymousId,
           reputation: user.reputation,
           createdAt: user.createdAt,

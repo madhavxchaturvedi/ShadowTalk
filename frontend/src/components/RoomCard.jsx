@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { FiUsers, FiMessageCircle, FiHash } from 'react-icons/fi';
 import { joinRoom, leaveRoom } from '../store/slices/roomsSlice';
 import { useState } from 'react';
 
@@ -35,7 +36,7 @@ const RoomCard = ({ room }) => {
     <div className="room-card" onClick={handleOpenRoom}>
       <div className="room-header">
         <div className="room-icon">
-          {room.icon || '💬'}
+          <FiHash className="w-6 h-6" style={{ color: 'var(--accent)' }} />
         </div>
         <div className="room-info">
           <h3 className="room-title">{room.name}</h3>
@@ -49,8 +50,12 @@ const RoomCard = ({ room }) => {
 
       <div className="room-meta">
         <div className="room-stats">
-          <span>👥 {room.memberCount || 0}</span>
-          <span>💬 {room.messageCount || 0}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <FiUsers className="w-4 h-4" /> {room.memberCount || 0}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <FiMessageCircle className="w-4 h-4" /> {room.messageCount || 0}
+          </span>
         </div>
         
         <button

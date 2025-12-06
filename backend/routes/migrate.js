@@ -1,8 +1,28 @@
 import express from 'express';
 import Room from '../models/Room.js';
 import User from '../models/User.js';
+import migrateShadowIds from '../utils/migrateShadowIds.js';
 
 const router = express.Router();
+
+// POST /api/migrate/shadow-ids - Add shadowId to existing users
+router.post('/shadow-ids', async (req, res) => {
+  try {
+    await migrateShadowIds();
+    
+    res.json({
+      success: true,
+      message: 'ShadowID migration completed successfully',
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to migrate ShadowIDs',
+      error: error.message,
+    });
+  }
+});
 
 // POST /api/migrate/sync-room-members - Sync user joinedRooms from room members
 router.post('/sync-room-members', async (req, res) => {

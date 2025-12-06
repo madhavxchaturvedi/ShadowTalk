@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './components/Navbar';
@@ -9,6 +9,7 @@ import DMList from './pages/DMList';
 import DirectMessage from './pages/DirectMessage';
 import Profile from './pages/Profile';
 import ModeratorDashboard from './pages/ModeratorDashboard';
+import ShadowIDSetup from './components/ShadowIDSetup';
 import { initializeSession } from './store/slices/authSlice';
 import { socket } from './services/socket';
 import { startKeepAlive, stopKeepAlive } from './utils/keepAlive';
@@ -17,22 +18,35 @@ function App() {
   const dispatch = useDispatch();
   const { loading, error, user } = useSelector((state) => state.auth);
   const initialized = useRef(false);
+  const [showSetup, setShowSetup] = useState(false);
 
   useEffect(() => {
     // Only initialize once to prevent infinite loops
     if (!initialized.current) {
       initialized.current = true;
+      
+      // Check if we have cached credentials
+      const existingToken = localStorage.getItem('shadowtalk_token');
+      const existingUser = localStorage.getItem('shadowtalk_user');
+      
+      // If no cached data, show choice screen (first visit or after logout)
+      if (!existingToken || !existingUser) {
+        setShowSetup(true);
+        return;
+      }
+      
+      // We have cached data, try to restore session
       dispatch(initializeSession());
     }
   }, [dispatch]);
 
-  // Start keep-alive service to prevent Render from spinning down
-  useEffect(() => {
-    startKeepAlive();
-    return () => {
-      stopKeepAlive();
-    };
-  }, []);
+  const handleSetupComplete = () => {
+    setShowSetup(false);
+    // If no user yet, initialize session (for new users who clicked "Create New")
+    if (!user) {
+      dispatch(initializeSession());
+    }
+  };
 
   // Register user for DM delivery when user is available
   useEffect(() => {
@@ -83,6 +97,11 @@ function App() {
         </button>
       </div>
     );
+  }
+
+  // Show ShadowID setup screen for first-time users
+  if (showSetup) {
+    return <ShadowIDSetup onComplete={handleSetupComplete} />;
   }
 
   return (
