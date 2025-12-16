@@ -79,11 +79,19 @@ const Message = ({ message, onReply, isReply = false }) => {
   };
 
   const loadReplies = async () => {
+    // Toggle if replies already loaded
     if (replies.length > 0) {
       setShowReplies(!showReplies);
       return;
     }
 
+    // If already showing (but no replies loaded yet), just close
+    if (showReplies) {
+      setShowReplies(false);
+      return;
+    }
+
+    // Load replies from server
     setLoadingReplies(true);
     try {
       const res = await api.get(`/messages/${message._id}/replies`);
@@ -135,9 +143,7 @@ const Message = ({ message, onReply, isReply = false }) => {
           }}
         >
           <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', fontWeight: '500' }}>
-            {message.sender.nickname 
-              ? `${message.sender.nickname} (${message.sender.shadowId || message.sender.anonymousId})` 
-              : message.sender.shadowId || message.sender.anonymousId}
+            {message.sender.nickname || 'Anonymous'}
             {message.isPending && (
               <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                 <FiClock className="w-3 h-3" /> Sending...
@@ -188,37 +194,37 @@ const Message = ({ message, onReply, isReply = false }) => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '12px', opacity: 0.65 }}>
               <button
                 onClick={() => setShowReactionPicker(!showReactionPicker)}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
               >
-                😊 React
+                React
               </button>
               <button
                 onClick={loadReplies}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
               >
-                💬 Reply
+                {showReplies ? 'Hide Replies' : 'Reply'} {replies.length > 0 && `(${replies.length})`}
               </button>
               {!isOwnMessage && message.sender?._id && (
                 <>
                   <button
                     onClick={() => navigate(`/dm/${message.sender._id}`)}
-                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
                   >
-                    📨 DM
+                    DM
                   </button>
                   <button
                     onClick={() => setShowReportModal(true)}
-                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
                   >
-                    🚨 Report
+                    Report
                   </button>
                 </>
               )}

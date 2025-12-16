@@ -5,7 +5,6 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
 import { contentFilter } from '../middleware/contentFilter.js';
 import { awardPoints } from '../utils/reputation.js';
-import { antiSpamLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -74,7 +73,7 @@ router.get('/:roomId', authMiddleware, async (req, res) => {
 });
 
 // POST /api/messages/:roomId - Send a message (for fallback when Socket.io unavailable)
-router.post('/:roomId', authMiddleware, antiSpamLimiter, contentFilter, async (req, res) => {
+router.post('/:roomId', authMiddleware, contentFilter, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { content } = req.body;

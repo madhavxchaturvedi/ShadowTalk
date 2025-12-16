@@ -17,20 +17,13 @@ const Home = () => {
     'Mental Health', 'Relationships', 'Career', 'Hobbies', 'Other'
   ];
 
-  // Fetch rooms and user's joined rooms ONLY when authenticated
+  // Fetch rooms when component mounts or when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchRooms(filters));
       dispatch(fetchMyRooms());
     }
-  }, [dispatch, isAuthenticated]); // Removed filters from dependencies to prevent infinite loop
-
-  // Refetch when filters change
-  useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchRooms(filters));
-    }
-  }, [dispatch, filters, isAuthenticated]);
+  }, [dispatch, isAuthenticated, filters.topic, filters.search, filters.sort]);
 
   const handleTopicChange = (topic) => {
     dispatch(setFilters({ topic }));

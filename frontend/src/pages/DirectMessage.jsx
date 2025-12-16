@@ -302,7 +302,7 @@ const DirectMessage = () => {
                   }}
                 >
                   <div style={{ fontSize: '12px', opacity: 0.75, marginBottom: '4px' }}>
-                    {msg.sender.anonymousId}
+                    {msg.sender.nickname || 'Anonymous'}
                     {msg.isPending && (
                       <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                         <FiClock className="w-3 h-3" /> Sending...

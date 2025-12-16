@@ -1,8 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import bcryptjs from 'bcryptjs';
 import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
+import { hashShadowId } from '../utils/encryption.js';
 
 const router = express.Router();
 
@@ -34,49 +36,92 @@ const generateSessionId = () => {
  */
 router.post('/anon', authLimiter, async (req, res, next) => {
   try {
-    const { shadowId, nickname } = req.body;
+    const { shadowId, nickname, password } = req.body;
     let user;
+    let plainShadowId; // Store the plain shadowId for response
 
     // If shadowId provided, try to find existing user
     if (shadowId) {
-      user = await User.findOne({ shadowId, isActive: true });
+      const hashedShadowId = hashShadowId(shadowId);
+      user = await User.findOne({ shadowId: hashedShadowId, isActive: true }).select('+shadowPassword');
       
-      if (user) {
-        // Update nickname if provided
-        if (nickname && nickname.trim() && nickname !== user.nickname) {
-          user.nickname = nickname.trim().substring(0, 20);
+      if (!user) {
+        // ShadowID not found - return error
+        return res.status(404).json({
+          success: false,
+          message: 'ShadowID not found. Please check and try again.',
+        });
+      }
+      
+      // Verify password if user has one set
+      if (user.shadowPassword) {
+        if (!password) {
+          return res.status(401).json({
+            success: false,
+            message: 'Password required for this ShadowID',
+            requiresPassword: true,
+          });
         }
+        
+        const isPasswordValid = await bcryptjs.compare(password, user.shadowPassword);
+        if (!isPasswordValid) {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid password',
+          });
+        }
+      }
+      
+      // Update nickname if provided
+      if (nickname && nickname.trim() && nickname !== user.nickname) {
+        user.nickname = nickname.trim().substring(0, 20);
+        await user.save();
+      } else {
+        // Just update last seen
         user.lastSeen = new Date();
         await user.save();
       }
+      
+      // Use the plain shadowId provided by user (they already know it)
+      plainShadowId = shadowId;
     }
-
-    // Create new user if not found
-    if (!user) {
-      const newShadowId = shadowId || generateShadowId();
+    
+    // Create new user only if no shadowId was provided
+    if (!user && !shadowId) {
+      const newShadowId = generateShadowId();
       const anonymousId = generateAnonymousId();
       const sessionId = generateSessionId();
 
       // Ensure unique shadowId
       let uniqueShadowId = newShadowId;
       let attempts = 0;
-      while (await User.findOne({ shadowId: uniqueShadowId }) && attempts < 10) {
+      while (await User.findOne({ shadowId: hashShadowId(uniqueShadowId) }) && attempts < 10) {
         uniqueShadowId = generateShadowId();
         attempts++;
       }
 
+      // Hash password if provided
+      let hashedPassword = null;
+      if (password && password.trim()) {
+        hashedPassword = await bcryptjs.hash(password.trim(), 10);
+      }
+
       user = await User.create({
-        shadowId: uniqueShadowId,
+        shadowId: hashShadowId(uniqueShadowId),
         nickname: nickname?.trim().substring(0, 20) || null,
+        shadowPassword: hashedPassword,
         anonymousId,
         sessionId,
       });
+
+      // Store the plain shadowId for response
+      plainShadowId = uniqueShadowId;
     }
 
     // Generate JWT token
     const token = jwt.sign(
       { 
-        shadowId: user.shadowId,
+        shadowId: plainShadowId,
         anonymousId: user.anonymousId,
         sessionId: user.sessionId,
       },
@@ -91,7 +136,7 @@ router.post('/anon', authLimiter, async (req, res, next) => {
         token,
         user: {
           _id: user._id,
-          shadowId: user.shadowId,
+          shadowId: plainShadowId,
           nickname: user.nickname,
           anonymousId: user.anonymousId,
           reputation: user.reputation,
@@ -115,17 +160,17 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
     const sessionId = generateSessionId();
     const shadowId = generateShadowId();
 
-    // Create user in database
+    // Create user in database with hashed shadowId
     const user = await User.create({
-      shadowId,
+      shadowId: hashShadowId(shadowId),
       anonymousId,
       sessionId,
     });
 
-    // Generate JWT token
+    // Generate JWT token with plain shadowId
     const token = jwt.sign(
       { 
-        shadowId: user.shadowId,
+        shadowId: shadowId,
         anonymousId: user.anonymousId,
         sessionId: user.sessionId,
       },
@@ -140,7 +185,7 @@ router.post('/create-session', authLimiter, async (req, res, next) => {
         token,
         user: {
           _id: user._id,
-          shadowId: user.shadowId,
+          shadowId: shadowId,
           anonymousId: user.anonymousId,
           reputation: user.reputation,
           createdAt: user.createdAt,

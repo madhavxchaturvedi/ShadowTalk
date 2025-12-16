@@ -9,6 +9,11 @@ const userSchema = new mongoose.Schema({
     sparse: true, // Allows multiple null values
     index: true,
   },
+  shadowPassword: {
+    type: String, // Hashed password to protect ShadowID
+    required: false,
+    select: false, // Don't include in queries by default
+  },
   nickname: {
     type: String,
     default: null,

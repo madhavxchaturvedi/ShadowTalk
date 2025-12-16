@@ -53,15 +53,9 @@ const Room = () => {
 
   // Socket.io setup
   useEffect(() => {
-    if (!user) return;
+    if (!user || !roomId) return;
 
-    connectSocket();
-
-    // Join room
-    socket.emit('join_room', roomId);
-
-    // Listen for new messages
-    socket.on('new_message', (message) => {
+    const handleNewMessage = (message) => {
       setMessages((prev) => {
         // Check if message already exists (avoid duplicates)
         const exists = prev.some(msg => msg._id === message._id);
@@ -75,13 +69,25 @@ const Room = () => {
         }
         return [...prev, message];
       });
-    });
+    };
+
+    // Connect socket if not already connected
+    if (!socket.connected) {
+      connectSocket();
+    }
+
+    // Join room
+    socket.emit('join_room', roomId);
+
+    // Listen for new messages
+    socket.on('new_message', handleNewMessage);
 
     return () => {
+      // Leave room and remove listener
       socket.emit('leave_room', roomId);
-      socket.off('new_message');
+      socket.off('new_message', handleNewMessage);
     };
-  }, [roomId, user]);
+  }, [roomId, user?._id]); // Only depend on roomId and user ID, not entire user object
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -162,7 +168,14 @@ const Room = () => {
       // Restore message text so user can retry
       setNewMessage(messageContent);
       
-      alert('Failed to send message. Please check your connection and try again.');
+      // Show specific error message
+      if (error.response?.status === 429) {
+        alert('You are sending messages too quickly. Please wait a moment and try again.');
+      } else if (error.response?.status === 403) {
+        alert('You do not have permission to send messages in this room.');
+      } else {
+        alert('Failed to send message. Please check your connection and try again.');
+      }
     } finally {
       setSending(false);
     }

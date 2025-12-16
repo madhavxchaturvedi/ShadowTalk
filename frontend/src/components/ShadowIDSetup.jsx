@@ -6,33 +6,20 @@ import { updateUser } from '../store/slices/authSlice';
 
 const ShadowIDSetup = ({ onComplete }) => {
   const user = useSelector(state => state.auth.user);
-  const [mode, setMode] = useState(user ? 'setup' : 'choice'); // 'choice', 'setup', 'login'
-  const [nickname, setNickname] = useState(user?.nickname || '');
+  const [mode, setMode] = useState('choice'); // 'choice', 'setup', 'login', 'success'
+  const [nickname, setNickname] = useState('');
   const [shadowIdInput, setShadowIdInput] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [createdShadowId, setCreatedShadowId] = useState('');
   const dispatch = useDispatch();
 
-  const handleCreateNew = async () => {
-    setLoading(true);
+  const handleCreateNew = () => {
+    // Just switch to setup mode - user will be created when they click Continue
+    setMode('setup');
     setError('');
-    
-    try {
-      // Create a new anonymous session with auto-generated ShadowID
-      const result = await anonAuth();
-      if (result.success) {
-        dispatch(updateUser(result.user));
-        // Switch to setup mode to let user optionally add nickname
-        setMode('setup');
-      } else {
-        setError(result.message || 'Failed to create identity');
-      }
-    } catch (error) {
-      console.error('Create new error:', error);
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleLoginExisting = () => {
@@ -41,22 +28,31 @@ const ShadowIDSetup = ({ onComplete }) => {
   };
 
   const handleStart = async () => {
-    if (mode === 'setup' && !nickname.trim() && !user) {
-      // Allow skip for new users
-      onComplete();
-      return;
+    // Validate password if provided
+    if (password) {
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
     }
 
     setLoading(true);
     setError('');
     
     try {
-      const result = await anonAuth(user?.shadowId, nickname.trim() || null);
+      // Create new account with optional nickname and password
+      // Don't pass shadowId - let backend generate it
+      const result = await anonAuth(null, nickname.trim() || null, password || null);
       if (result.success) {
         dispatch(updateUser(result.user));
-        onComplete();
+        setCreatedShadowId(result.user.shadowId);
+        setMode('success');
       } else {
-        setError(result.message || 'Failed to save');
+        setError(result.message || 'Failed to create account');
       }
     } catch (error) {
       console.error('Setup error:', error);
@@ -67,6 +63,7 @@ const ShadowIDSetup = ({ onComplete }) => {
   };
 
   const handleLoginWithShadowId = async () => {
+    console.log('🔐 handleLoginWithShadowId called');
     if (!shadowIdInput.trim()) {
       setError('Please enter your ShadowID');
       return;
@@ -76,17 +73,26 @@ const ShadowIDSetup = ({ onComplete }) => {
     setError('');
     
     try {
-      const result = await anonAuth(shadowIdInput.trim());
+      console.log('🔑 Calling anonAuth with shadowId:', shadowIdInput, 'password:', password ? '***' : 'none');
+      const result = await anonAuth(shadowIdInput.trim(), null, password || null);
+      console.log('📥 anonAuth result:', result);
+      
       if (result.success) {
+        console.log('✅ Login successful, calling onComplete');
         dispatch(updateUser(result.user));
         onComplete();
+      } else if (result.requiresPassword && !password) {
+        console.log('🔒 Password required');
+        setError('This ShadowID is password protected. Please enter your password.');
       } else {
-        setError('ShadowID not found. Please check and try again.');
+        console.log('❌ Login failed:', result.message);
+        setError(result.message || 'ShadowID not found. Please check and try again.');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('💥 Login error:', error);
       setError('Failed to login. Please try again.');
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
@@ -231,7 +237,7 @@ const ShadowIDSetup = ({ onComplete }) => {
                   id="shadowIdInput"
                   type="text"
                   value={shadowIdInput}
-                  onChange={(e) => setShadowIdInput(e.target.value.toUpperCase())}
+                  onChange={(e) => setShadowIdInput(e.target.value)}
                   placeholder="e.g., ShadowABC123"
                   className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
                   style={{
@@ -241,7 +247,36 @@ const ShadowIDSetup = ({ onComplete }) => {
                     fontSize: '16px',
                     letterSpacing: '1px'
                   }}
-                  onKeyPress={(e) => e.key === 'Enter' && handleLoginWithShadowId()}
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="loginPassword" 
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Password (if protected)
+                </label>
+                <input
+                  id="loginPassword"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password (optional)"
+                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    fontSize: '16px'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLoginWithShadowId();
+                    }
+                  }}
                 />
               </div>
 
@@ -291,6 +326,88 @@ const ShadowIDSetup = ({ onComplete }) => {
     );
   }
 
+  // Success screen - Show created ShadowID
+  if (mode === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
+        <div className="max-w-md w-full">
+          {/* Shadow Logo/Title */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{ background: 'var(--accent)', boxShadow: '0 0 30px var(--accent)' }}>
+              <FiCheck className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              Success!
+            </h1>
+            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+              Your Shadow Identity is Ready
+            </p>
+          </div>
+
+          {/* Success Card */}
+          <div 
+            className="p-8 rounded-xl mb-6"
+            style={{ 
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 10px 40px var(--shadow)'
+            }}
+          >
+            <div className="text-center mb-6">
+              <div className="text-sm mb-3 flex items-center justify-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                <FiLock className="w-4 h-4" />
+                Your Shadow Identity
+              </div>
+              <div 
+                className="text-3xl font-bold px-6 py-4 rounded-lg inline-block select-all"
+                style={{ 
+                  background: 'var(--accent)',
+                  color: 'white',
+                  letterSpacing: '2px',
+                  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                {createdShadowId}
+              </div>
+              <div className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>
+                Click to select and copy
+              </div>
+            </div>
+
+            <div 
+              className="p-4 rounded-lg text-sm mb-6"
+              style={{ 
+                background: 'var(--warning-light)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: 'var(--warning)'
+              }}
+            >
+              <div className="font-semibold mb-2">⚠️ Important: Save This ShadowID!</div>
+              <ul className="space-y-1 text-xs">
+                <li>• This is your only way to access your account</li>
+                <li>• There is NO password recovery</li>
+                <li>• Save it in a safe place (password manager, notes, etc.)</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={onComplete}
+              className="w-full py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+              style={{
+                background: 'var(--accent)',
+                color: 'white',
+                fontSize: '16px'
+              }}
+            >
+              <FiCheck className="w-5 h-5" />
+              I've Saved My ShadowID - Let's Go!
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Setup screen (existing code for new users or nickname setup)
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
@@ -318,28 +435,28 @@ const ShadowIDSetup = ({ onComplete }) => {
           }}
         >
           <div className="text-center mb-6">
-            <div className="text-sm mb-3 flex items-center justify-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-              <FiLock className="w-4 h-4" />
-              Your Shadow Identity
-            </div>
-            <div 
-              className="text-3xl font-bold px-6 py-4 rounded-lg inline-block"
-              style={{ 
-                background: 'var(--accent)',
-                color: 'white',
-                letterSpacing: '2px',
-                boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)'
-              }}
-            >
-              {user?.shadowId || 'Shadow...'}
-            </div>
-            <div className="text-xs mt-3 flex items-center justify-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-              <FiCheck className="w-4 h-4 text-green-500" />
-              This ID is yours forever. Save it!
-            </div>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              Create Your Identity
+            </h2>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Your ShadowID will be generated automatically
+            </p>
           </div>
 
           <div className="space-y-4">
+            {error && (
+              <div 
+                className="p-3 rounded-lg text-sm flex items-center gap-2"
+                style={{ 
+                  background: 'var(--danger-light)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: 'var(--danger)'
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <div>
               <label 
                 htmlFor="nickname" 
@@ -362,16 +479,75 @@ const ShadowIDSetup = ({ onComplete }) => {
                   color: 'var(--text-primary)',
                   fontSize: '16px'
                 }}
-                onKeyPress={(e) => e.key === 'Enter' && handleStart()}
               />
               <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                 {nickname.length}/20 characters
               </div>
             </div>
 
+            <div>
+              <label 
+                htmlFor="setupPassword" 
+                className="text-sm font-medium mb-2 flex items-center gap-2"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <FiLock className="w-4 h-4" />
+                Protect with Password (optional)
+              </label>
+              <input
+                id="setupPassword"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password (min 6 characters)"
+                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  fontSize: '16px'
+                }}
+              />
+              <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                Secure your ShadowID with a password
+              </div>
+            </div>
+
+            {password && (
+              <div>
+                <label 
+                  htmlFor="confirmPassword" 
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter password"
+                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    fontSize: '16px'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleStart();
+                    }
+                  }}
+                />
+              </div>
+            )}
+
             <button
               onClick={handleStart}
-              disabled={!nickname.trim() || loading}
+              disabled={loading}
               className="w-full py-3 px-6 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: 'var(--accent)',
@@ -379,13 +555,13 @@ const ShadowIDSetup = ({ onComplete }) => {
                 fontSize: '16px'
               }}
             >
-              <FiCheck className="w-5 h-5" />
-              {loading ? 'Saving...' : nickname.trim() ? `Start as ${nickname}` : 'Enter Nickname'}
+              <FiUserPlus className="w-5 h-5" />
+              {loading ? 'Creating Account...' : 'Create My ShadowID'}
             </button>
 
             <button
-              onClick={onComplete}
-              className="w-full py-3 rounded-lg font-semibold transition-all"
+              onClick={() => setMode('choice')}
+              className="w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
               style={{
                 background: 'transparent',
                 color: 'var(--text-secondary)',
@@ -393,7 +569,8 @@ const ShadowIDSetup = ({ onComplete }) => {
                 fontSize: '14px'
               }}
             >
-              Skip for now
+              <FiArrowLeft className="w-4 h-4" />
+              Back
             </button>
           </div>
         </div>

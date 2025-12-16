@@ -37,13 +37,13 @@ export const messageLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Anti-spam IP rate limiter - 3 messages per minute per IP
+// Anti-spam IP rate limiter - 10 messages per minute per IP
 export const antiSpamLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 3,
+  max: 10,
   message: {
     success: false,
-    message: '🚫 Anti-spam: Maximum 3 messages per minute. Please slow down.',
+    message: 'Anti-spam: Maximum 10 messages per minute. Please slow down.',
   },
   standardHeaders: true,
   legacyHeaders: false,

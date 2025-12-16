@@ -13,7 +13,24 @@ const DMList = () => {
     const loadConversations = async () => {
       try {
         const res = await api.get('/dms/conversations');
-        setConversations(res.data.data.conversations);
+        
+        // Deduplicate conversations by user ID
+        const uniqueConversations = res.data.data.conversations.reduce((acc, conv) => {
+          const existingIndex = acc.findIndex(c => c.user._id === conv.user._id);
+          if (existingIndex === -1) {
+            acc.push(conv);
+          } else {
+            // Keep the one with the most recent message
+            const existingTime = acc[existingIndex].lastMessage?.createdAt || 0;
+            const currentTime = conv.lastMessage?.createdAt || 0;
+            if (new Date(currentTime) > new Date(existingTime)) {
+              acc[existingIndex] = conv;
+            }
+          }
+          return acc;
+        }, []);
+        
+        setConversations(uniqueConversations);
       } catch (error) {
         console.error('Load conversations error:', error);
       } finally {
@@ -75,9 +92,11 @@ const DMList = () => {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-bold">{conv.user.anonymousId}</h3>
+                    <h3 className="text-lg font-bold">
+                      {conv.user.nickname || `User ${conv.user._id.slice(-6)}`}
+                    </h3>
                     <span className="text-xs text-[var(--text-secondary)]">
-                      Level {conv.user.reputation.level}
+                      Level {conv.user.reputation?.level || 1}
                     </span>
                     {conv.unreadCount > 0 && (
                       <span className="bg-[var(--accent)] text-white text-xs px-2 py-1 rounded-full">

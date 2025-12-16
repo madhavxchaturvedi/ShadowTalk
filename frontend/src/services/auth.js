@@ -1,9 +1,9 @@
 import api from './api';
 
 // Persistent ShadowID authentication - find or create user
-export const anonAuth = async (shadowId = null, nickname = null) => {
+export const anonAuth = async (shadowId = null, nickname = null, password = null) => {
   try {
-    const response = await api.post('/auth/anon', { shadowId, nickname });
+    const response = await api.post('/auth/anon', { shadowId, nickname, password });
     const { token, user } = response.data.data;
 
     // Store token and user in localStorage
@@ -13,12 +13,19 @@ export const anonAuth = async (shadowId = null, nickname = null) => {
       localStorage.setItem('shadowtalk_shadowId', user.shadowId);
     }
 
-    return { success: true, token, user, isNew: response.status === 201 };
+    return { 
+      success: true, 
+      token, 
+      user, 
+      isNew: response.status === 201,
+      requiresPassword: false,
+    };
   } catch (error) {
     console.error('Anon auth error:', error);
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to authenticate',
+      requiresPassword: error.response?.data?.requiresPassword || false,
     };
   }
 };

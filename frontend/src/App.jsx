@@ -42,10 +42,7 @@ function App() {
 
   const handleSetupComplete = () => {
     setShowSetup(false);
-    // If no user yet, initialize session (for new users who clicked "Create New")
-    if (!user) {
-      dispatch(initializeSession());
-    }
+    // User is already authenticated via ShadowIDSetup - no need to initialize again
   };
 
   // Register user for DM delivery when user is available

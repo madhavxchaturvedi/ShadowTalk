@@ -4,11 +4,9 @@ import { checkContentSafety } from './aiModeration.js';
 const bannedKeywords = [
   // Offensive/hate speech
   'fuck', 'shit', 'bitch', 'asshole', 'bastard',
-  'damn', 'hell', 'crap', 'piss', 'dick',
-  // Add more as needed - this is a basic example
-  'nigger', 'faggot', 'retard', 'cunt',
-  // Spam indicators
-  'buy now', 'click here', 'limited time', 'free money',
+  'damn', 'hell', 'nigger', 'faggot', 'retard', 'cunt',
+  // Threats and harassment
+  'kill yourself', 'kys', 'die', 'suicide',
 ];
 
 const checkContent = async (content) => {
@@ -44,9 +42,9 @@ const checkContent = async (content) => {
     }
   }
 
-  // Check for excessive caps (potential spam)
+  // Check for excessive caps (potential spam) - 90% caps and 30+ chars
   const capsRatio = (content.match(/[A-Z]/g) || []).length / content.length;
-  if (content.length > 10 && capsRatio > 0.7) {
+  if (content.length > 30 && capsRatio > 0.9) {
     return {
       clean: false,
       reason: 'spam',
@@ -55,8 +53,8 @@ const checkContent = async (content) => {
     };
   }
 
-  // Check for repeated characters (spam pattern)
-  if (/(.)\1{4,}/.test(content)) {
+  // Check for repeated characters (spam pattern) - 15+ repeated chars like "aaaaaaaaaaaaaaaa"
+  if (/(.)\1{14,}/.test(content)) {
     return {
       clean: false,
       reason: 'spam',

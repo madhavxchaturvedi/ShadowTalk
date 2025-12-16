@@ -5,7 +5,6 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import { sanitizeInput } from '../utils/validators.js';
 import { contentFilter } from '../middleware/contentFilter.js';
 import { awardPoints } from '../utils/reputation.js';
-import { antiSpamLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -29,7 +28,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
     // Get user details and last message for each conversation
     const conversations = await Promise.all(
       userIds.map(async (userId) => {
-        const user = await User.findById(userId).select('anonymousId reputation lastSeen');
+        const user = await User.findById(userId).select('anonymousId shadowId nickname reputation lastSeen');
         
         // Get last message
         const lastMessage = await PrivateMessage.findOne({
@@ -136,7 +135,7 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 });
 
 // POST /api/dms/:userId - Send a DM
-router.post('/:userId', authMiddleware, antiSpamLimiter, contentFilter, async (req, res) => {
+router.post('/:userId', authMiddleware, contentFilter, async (req, res) => {
   try {
     const { userId } = req.params;
     const { content } = req.body;
