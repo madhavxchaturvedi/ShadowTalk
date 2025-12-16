@@ -1,8 +1,12 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client only if API key is available
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 /**
  * Check content safety using OpenAI Moderation API
@@ -11,8 +15,8 @@ const openai = new OpenAI({
  */
 export const checkContentSafety = async (content) => {
   try {
-    // If no API key, skip AI moderation (fall back to basic filter)
-    if (!process.env.OPENAI_API_KEY) {
+    // If no API key or OpenAI client not initialized, skip AI moderation (fall back to basic filter)
+    if (!openai || !process.env.OPENAI_API_KEY) {
       console.warn('⚠️  OPENAI_API_KEY not set - skipping AI moderation');
       return { safe: true, flagged: false, categories: {}, reason: null };
     }
