@@ -39,6 +39,52 @@ const roomSchema = new mongoose.Schema({
       'Other'
     ],
   },
+  roomType: {
+    type: String,
+    enum: ['text', 'voice', 'both'],
+    default: 'text',
+  },
+  voiceSettings: {
+    maxParticipants: {
+      type: Number,
+      default: 50,
+      min: 2,
+      max: 100,
+    },
+    bitrate: {
+      type: Number,
+      default: 64000, // 64 kbps
+      enum: [32000, 64000, 96000, 128000],
+    },
+    echoCancellation: {
+      type: Boolean,
+      default: true,
+    },
+    noiseSuppression: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  activeVoiceUsers: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    anonymousId: String,
+    socketId: String,
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    isMuted: {
+      type: Boolean,
+      default: false,
+    },
+    isDeafened: {
+      type: Boolean,
+      default: false,
+    },
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

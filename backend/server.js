@@ -20,6 +20,10 @@ import userRoutes from './routes/users.js';
 import reportRoutes from './routes/reports.js';
 import migrateRoutes from './routes/migrate.js';
 
+// Import models
+import VoiceChannel from './models/VoiceChannel.js';
+import Room from './models/Room.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -137,6 +141,187 @@ io.on('connection', (socket) => {
   socket.on('stop_typing', (data) => {
     socket.to(data.roomId).emit('user_stopped_typing', {
       userId: data.userId,
+    });
+  });
+
+  // ========== VOICE CHANNEL HANDLERS ==========
+
+  // Join voice channel
+  socket.on('voice:join', async (data) => {
+    try {
+      const { roomId, userId, anonymousId, peerId } = data;
+      console.log(`🎤 User ${anonymousId} joining voice in room ${roomId}`);
+
+      // Join voice room for WebRTC signaling
+      socket.join(`voice:${roomId}`);
+
+      // Find or create voice channel
+      let voiceChannel = await VoiceChannel.findOne({ roomId, isActive: true });
+      
+      if (!voiceChannel) {
+        voiceChannel = await VoiceChannel.create({
+          roomId,
+          participants: [],
+        });
+      }
+
+      // Add participant
+      await voiceChannel.addParticipant({
+        userId,
+        anonymousId,
+        socketId: socket.id,
+        peerId,
+        isMuted: false,
+        isDeafened: false,
+      });
+
+      // Update room's activeVoiceUsers
+      await Room.findByIdAndUpdate(roomId, {
+        $addToSet: {
+          activeVoiceUsers: {
+            userId,
+            anonymousId,
+            socketId: socket.id,
+            isMuted: false,
+            isDeafened: false,
+          }
+        }
+      });
+
+      // Notify others in voice channel
+      socket.to(`voice:${roomId}`).emit('voice:user_joined', {
+        userId,
+        anonymousId,
+        peerId,
+        socketId: socket.id,
+      });
+
+      // Send current participants to new user
+      const participants = voiceChannel.participants
+        .filter(p => p.socketId !== socket.id)
+        .map(p => ({
+          userId: p.userId,
+          anonymousId: p.anonymousId,
+          peerId: p.peerId,
+          socketId: p.socketId,
+          isMuted: p.isMuted,
+          isDeafened: p.isDeafened,
+        }));
+
+      socket.emit('voice:participants', participants);
+
+      console.log(`✅ User ${anonymousId} joined voice channel. Total: ${voiceChannel.participants.length}`);
+    } catch (error) {
+      console.error('❌ Error joining voice channel:', error);
+      socket.emit('voice:error', { message: 'Failed to join voice channel' });
+    }
+  });
+
+  // Leave voice channel
+  socket.on('voice:leave', async (data) => {
+    try {
+      const { roomId, userId, anonymousId } = data;
+      console.log(`🎤 User ${anonymousId} leaving voice in room ${roomId}`);
+
+      // Leave voice room
+      socket.leave(`voice:${roomId}`);
+
+      // Remove from voice channel
+      const voiceChannel = await VoiceChannel.findOne({ roomId, isActive: true });
+      if (voiceChannel) {
+        await voiceChannel.removeParticipant(userId);
+      }
+
+      // Update room's activeVoiceUsers
+      await Room.findByIdAndUpdate(roomId, {
+        $pull: { activeVoiceUsers: { userId } }
+      });
+
+      // Notify others
+      socket.to(`voice:${roomId}`).emit('voice:user_left', {
+        userId,
+        anonymousId,
+        socketId: socket.id,
+      });
+
+      console.log(`✅ User ${anonymousId} left voice channel`);
+    } catch (error) {
+      console.error('❌ Error leaving voice channel:', error);
+    }
+  });
+
+  // WebRTC signaling: Offer
+  socket.on('webrtc:offer', (data) => {
+    const { roomId, targetSocketId, offer, from } = data;
+    console.log(`📞 WebRTC offer from ${from} to ${targetSocketId}`);
+    
+    io.to(targetSocketId).emit('webrtc:offer', {
+      offer,
+      from,
+      fromSocketId: socket.id,
+    });
+  });
+
+  // WebRTC signaling: Answer
+  socket.on('webrtc:answer', (data) => {
+    const { targetSocketId, answer, from } = data;
+    console.log(`📞 WebRTC answer from ${from} to ${targetSocketId}`);
+    
+    io.to(targetSocketId).emit('webrtc:answer', {
+      answer,
+      from,
+      fromSocketId: socket.id,
+    });
+  });
+
+  // WebRTC signaling: ICE Candidate
+  socket.on('ice:candidate', (data) => {
+    const { targetSocketId, candidate, from } = data;
+    
+    io.to(targetSocketId).emit('ice:candidate', {
+      candidate,
+      from,
+      fromSocketId: socket.id,
+    });
+  });
+
+  // Voice status updates (mute/deafen)
+  socket.on('voice:update_status', async (data) => {
+    try {
+      const { roomId, userId, isMuted, isDeafened } = data;
+
+      const voiceChannel = await VoiceChannel.findOne({ roomId, isActive: true });
+      if (voiceChannel) {
+        await voiceChannel.updateParticipantStatus(userId, { isMuted, isDeafened });
+      }
+
+      // Notify others
+      socket.to(`voice:${roomId}`).emit('voice:user_status_changed', {
+        userId,
+        socketId: socket.id,
+        isMuted,
+        isDeafened,
+      });
+    } catch (error) {
+      console.error('❌ Error updating voice status:', error);
+    }
+  });
+
+  // Voice activity detection
+  socket.on('voice:speaking', (data) => {
+    const { roomId, userId, anonymousId } = data;
+    socket.to(`voice:${roomId}`).emit('voice:user_speaking', {
+      userId,
+      anonymousId,
+      socketId: socket.id,
+    });
+  });
+
+  socket.on('voice:stopped_speaking', (data) => {
+    const { roomId, userId } = data;
+    socket.to(`voice:${roomId}`).emit('voice:user_stopped_speaking', {
+      userId,
+      socketId: socket.id,
     });
   });
 

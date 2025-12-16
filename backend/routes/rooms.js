@@ -121,7 +121,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // POST /api/rooms - Create new room
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, description, topic } = req.body;
+    const { name, description, topic, roomType = 'text' } = req.body;
 
     // Validate name
     const nameValidation = validateRoomName(name);
@@ -146,11 +146,21 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
+    // Validate room type
+    const validRoomTypes = ['text', 'voice', 'both'];
+    if (roomType && !validRoomTypes.includes(roomType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid room type. Must be: text, voice, or both',
+      });
+    }
+
     // Create room
     const room = await Room.create({
       name: sanitizeInput(name),
       description: sanitizeInput(description || ''),
       topic,
+      roomType,
       createdBy: req.user.id,
       members: [req.user.id], // Creator auto-joins
     });

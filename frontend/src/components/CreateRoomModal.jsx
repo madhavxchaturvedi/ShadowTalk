@@ -8,6 +8,7 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
     name: '',
     description: '',
     topic: 'General',
+    roomType: 'text',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,12 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
     'Mental Health', 'Relationships', 'Career', 'Hobbies', 'Other'
   ];
 
+  const roomTypes = [
+    { value: 'text', label: '💬 Text Only', description: 'Traditional text-based chat' },
+    { value: 'voice', label: '🎤 Voice Only', description: 'Voice channel with no text' },
+    { value: 'both', label: '🎧 Text + Voice', description: 'Both text chat and voice' },
+  ];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -25,7 +32,7 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
 
     try {
       await dispatch(createRoom(formData)).unwrap();
-      setFormData({ name: '', description: '', topic: 'General' });
+      setFormData({ name: '', description: '', topic: 'General', roomType: 'text' });
       onClose();
     } catch (err) {
       setError(err);
@@ -37,9 +44,9 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl max-w-2xl w-full p-8">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-[var(--bg-secondary)] pb-4 border-b border-[var(--border)]">
           <h2 className="text-2xl font-bold">Create New Room</h2>
           <button
             onClick={onClose}
@@ -100,6 +107,44 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
                 <option key={topic} value={topic}>{topic}</option>
               ))}
             </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-3">
+              Room Type * <span className="text-[var(--accent)] ml-1">NEW!</span>
+            </label>
+            <div className="space-y-3">
+              {roomTypes.map(type => (
+                <label
+                  key={type.value}
+                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                    formData.roomType === type.value
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                      : 'border-[var(--border)] hover:border-[var(--border-hover)]'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="roomType"
+                    value={type.value}
+                    checked={formData.roomType === type.value}
+                    onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{type.label}</div>
+                    <div className="text-sm text-[var(--text-secondary)] mt-1">
+                      {type.description}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {formData.roomType !== 'text' && (
+              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm text-blue-300">
+                🎙️ Voice rooms use WebRTC for peer-to-peer audio. Microphone permission required.
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 justify-end">

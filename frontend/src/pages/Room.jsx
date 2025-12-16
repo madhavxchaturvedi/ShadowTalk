@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
 import { socket, connectSocket, disconnectSocket } from '../services/socket';
 import Message from '../components/Message';
+import VoiceChannel from '../components/VoiceChannel';
 import { updateUser } from '../store/slices/authSlice';
 
 const Room = () => {
@@ -200,64 +201,88 @@ const Room = () => {
           ← Back
         </button>
         <div className="room-info">
-          <h1>{room?.name}</h1>
+          <h1>
+            {room?.name}
+            {room?.roomType === 'voice' && ' 🎤'}
+            {room?.roomType === 'both' && ' 🎧'}
+          </h1>
           <p>
             {room?.memberCount} members • {room?.topic}
+            {room?.roomType && room.roomType !== 'text' && (
+              <span className="ml-2 text-[var(--accent)]">
+                • {room.roomType === 'voice' ? 'Voice Only' : 'Voice + Text'}
+              </span>
+            )}
           </p>
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="room-messages">
-        <div className="messages-container">
-          {messages.length === 0 ? (
-            <div className="empty-state">
-              <p className="text-lg">No messages yet</p>
-              <p className="text-sm" style={{ marginTop: '8px' }}>Be the first to start the conversation!</p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <Message key={message._id} message={message} />
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Message Input */}
-      <div className="room-input">
-        {connectionSlow && (
-          <div style={{
-            padding: '8px 16px',
-            backgroundColor: 'rgba(251, 191, 36, 0.1)',
-            borderLeft: '3px solid #fbbf24',
-            marginBottom: '8px',
-            borderRadius: '4px',
-            fontSize: '14px',
-            color: '#fbbf24',
-          }}>
-            ⚠️ Server is waking up... This may take 30-60 seconds on first request.
-          </div>
-        )}
-        <form onSubmit={handleSendMessage} className="message-form">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            disabled={sending}
-            className="message-input"
-            maxLength={2000}
+      {/* Voice Channel Component */}
+      {room && (room.roomType === 'voice' || room.roomType === 'both') && (
+        <div style={{ padding: '16px' }}>
+          <VoiceChannel 
+            roomId={roomId} 
+            roomName={room.name}
+            roomType={room.roomType}
           />
-          <button
-            type="submit"
-            disabled={!newMessage.trim() || sending}
-            className="send-button"
-          >
-            {sending ? 'Sending...' : 'Send'}
-          </button>
-        </form>
-      </div>
+        </div>
+      )}
+
+      {/* Messages Area - Hide for voice-only rooms */}
+      {room?.roomType !== 'voice' && (
+        <>
+          <div className="room-messages">
+            <div className="messages-container">
+              {messages.length === 0 ? (
+                <div className="empty-state">
+                  <p className="text-lg">No messages yet</p>
+                  <p className="text-sm" style={{ marginTop: '8px' }}>Be the first to start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <Message key={message._id} message={message} />
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Message Input */}
+          <div className="room-input">
+            {connectionSlow && (
+              <div style={{
+                padding: '8px 16px',
+                backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                borderLeft: '3px solid #fbbf24',
+                marginBottom: '8px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                color: '#fbbf24',
+              }}>
+                ⚠️ Server is waking up... This may take 30-60 seconds on first request.
+              </div>
+            )}
+            <form onSubmit={handleSendMessage} className="message-form">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                disabled={sending}
+                className="message-input"
+                maxLength={2000}
+              />
+              <button
+                type="submit"
+                disabled={!newMessage.trim() || sending}
+                className="send-button"
+              >
+                {sending ? 'Sending...' : 'Send'}
+              </button>
+            </form>
+          </div>
+        </>
+      )}
     </div>
   );
 };
