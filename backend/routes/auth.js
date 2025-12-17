@@ -340,4 +340,75 @@ router.post('/give-reputation', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/public-key
+ * Update user's public encryption key
+ */
+router.post('/public-key', authMiddleware, async (req, res, next) => {
+  try {
+    const { publicKey } = req.body;
+
+    if (!publicKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Public key is required',
+      });
+    }
+
+    const user = await User.findOne({ anonymousId: req.user.anonymousId });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    user.publicKey = publicKey;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Public key updated successfully',
+    });
+  } catch (error) {
+    console.error('Public key update error:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/auth/public-key/:userId
+ * Get user's public encryption key
+ */
+router.get('/public-key/:userId', authMiddleware, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId).select('publicKey anonymousId');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    if (!user.publicKey) {
+      return res.status(404).json({
+        success: false,
+        message: 'User has not set up encryption yet',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        publicKey: user.publicKey,
+        anonymousId: user.anonymousId,
+      },
+    });
+  } catch (error) {
+    console.error('Get public key error:', error);
+    next(error);
+  }
+});
+
 export default router;

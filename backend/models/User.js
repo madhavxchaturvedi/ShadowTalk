@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  // End-to-End Encryption
+  publicKey: {
+    type: String,
+    default: null,
+    // Base64 encoded RSA public key for E2E encryption
+  },
   reputation: {
     points: {
       type: Number,
