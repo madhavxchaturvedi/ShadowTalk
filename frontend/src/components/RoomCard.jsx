@@ -1,17 +1,20 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { FiUsers, FiMessageCircle, FiHash } from 'react-icons/fi';
+import { FiHash, FiVolume2, FiLock, FiUnlock } from 'react-icons/fi';
+import { HiSpeakerWave, HiUserGroup } from 'react-icons/hi2';
 import { joinRoom, leaveRoom } from '../store/slices/roomsSlice';
 import { useState } from 'react';
 
-const RoomCard = ({ room }) => {
+const RoomCard = ({ room, variant = 'card' }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { myRooms } = useSelector((state) => state.rooms);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const isMember = myRooms.some(r => r._id === room._id);
 
-  const handleJoinLeave = async () => {
+  const handleJoinLeave = async (e) => {
+    e.stopPropagation();
     setIsLoading(true);
     try {
       if (isMember) {
@@ -32,41 +35,88 @@ const RoomCard = ({ room }) => {
     }
   };
 
-  return (
-    <div className="room-card" onClick={handleOpenRoom}>
-      <div className="room-header">
-        <div className="room-icon">
-          <FiHash className="w-6 h-6" style={{ color: 'var(--accent)' }} />
+  const getRoomIcon = () => {
+    const roomType = room.roomType || 'text';
+    if (roomType === 'voice') {
+      return <HiSpeakerWave className="channel-icon" />;
+    }
+    return <FiHash className="channel-icon" />;
+  };
+
+  const isActive = window.location.pathname.includes(room._id);
+
+  // Discord-style compact list item
+  if (variant === 'list') {
+    return (
+      <div 
+        className={`channel-item ${isMember ? 'channel-joined' : 'channel-locked'} ${isActive ? 'channel-active' : ''}`}
+        onClick={handleOpenRoom}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="channel-main">
+          {getRoomIcon()}
+          <span className="channel-name">{room.name}</span>
+          {room.roomType === 'voice' && room.voiceSettings?.maxParticipants && (
+            <span className="channel-limit">{room.memberCount || 0}/{room.voiceSettings.maxParticipants}</span>
+          )}
         </div>
-        <div className="room-info">
-          <h3 className="room-title">{room.name}</h3>
-          <span className="room-topic">{room.topic}</span>
+        
+        {isHovered && !isMember && (
+          <button
+            onClick={handleJoinLeave}
+            disabled={isLoading}
+            className="channel-join-icon"
+            title="Join channel"
+          >
+            {isLoading ? '...' : '+'}
+          </button>
+        )}
+        
+        {!isMember && <FiLock className="channel-lock-icon" />}
+      </div>
+    );
+  }
+
+  // Card variant for discovery page
+  return (
+    <div 
+      className={`room-card-compact ${isMember ? 'room-joined' : ''} ${isActive ? 'room-active' : ''}`}
+      onClick={handleOpenRoom}
+    >
+      <div className="room-card-header">
+        <div className={`room-card-icon ${room.roomType === 'voice' ? 'icon-voice' : 'icon-text'}`}>
+          {getRoomIcon()}
+        </div>
+        <div className="room-card-content">
+          <div className="room-card-title-row">
+            <h3 className="room-card-title">{room.name}</h3>
+            {room.roomType === 'voice' && (
+              <span className="room-type-badge voice">
+                <HiSpeakerWave className="badge-icon" />
+                Voice
+              </span>
+            )}
+          </div>
+          <p className="room-card-desc">{room.description || 'No description'}</p>
         </div>
       </div>
 
-      <p className="room-description">
-        {room.description || 'Join this room to start chatting with the community'}
-      </p>
-
-      <div className="room-meta">
-        <div className="room-stats">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FiUsers className="w-4 h-4" /> {room.memberCount || 0}
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FiMessageCircle className="w-4 h-4" /> {room.messageCount || 0}
-          </span>
+      <div className="room-card-footer">
+        <div className="room-card-stats">
+          <div className="room-card-stat">
+            <HiUserGroup className="stat-icon" />
+            <span>{room.memberCount || 0}</span>
+          </div>
+          <span className="room-card-topic">{room.topic}</span>
         </div>
         
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleJoinLeave();
-          }}
+          onClick={handleJoinLeave}
           disabled={isLoading}
-          className={`room-join-btn ${isMember ? 'joined' : ''}`}
+          className={`room-card-btn ${isMember ? 'btn-joined' : 'btn-join'}`}
         >
-          {isLoading ? (isMember ? 'Leaving...' : 'Joining...') : (isMember ? 'Joined' : 'Join')}
+          {isLoading ? '...' : isMember ? 'Joined' : 'Join'}
         </button>
       </div>
     </div>

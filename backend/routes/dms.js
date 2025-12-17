@@ -102,8 +102,8 @@ router.get('/:userId', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
-      .populate('sender', 'anonymousId reputation')
-      .populate('receiver', 'anonymousId reputation')
+      .populate('sender', 'anonymousId nickname reputation')
+      .populate('receiver', 'anonymousId nickname reputation')
       .lean();
 
     // Mark received messages as read
@@ -190,8 +190,8 @@ router.post('/:userId', authMiddleware, contentFilter, async (req, res) => {
     // Award reputation points for sending DM
     await awardPoints(req.user.id, 'dm_sent', message._id);
 
-    await message.populate('sender', '_id anonymousId reputation');
-    await message.populate('receiver', '_id anonymousId reputation');
+    await message.populate('sender', '_id anonymousId nickname reputation');
+    await message.populate('receiver', '_id anonymousId nickname reputation');
 
     // Emit socket event to both sender and receiver
     const io = req.app.get('io');

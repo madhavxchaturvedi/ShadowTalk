@@ -39,8 +39,16 @@ router.get('/:roomId', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
-      .populate('sender', '_id anonymousId reputation')
+      .populate('sender', '_id anonymousId nickname reputation')
       .lean();
+
+    // Add reply count to each message
+    for (let msg of messages) {
+      msg.replyCount = await Message.countDocuments({
+        parentMessage: msg._id,
+        isDeleted: false,
+      });
+    }
 
     // Reverse to show oldest first
     messages.reverse();
@@ -125,7 +133,7 @@ router.post('/:roomId', authMiddleware, contentFilter, async (req, res) => {
     });
 
     // Populate sender info
-    await message.populate('sender', '_id anonymousId reputation');
+    await message.populate('sender', '_id anonymousId nickname reputation');
 
     // Broadcast to all room members via Socket.io
     const io = req.app.get('io');
@@ -243,7 +251,15 @@ router.get('/:messageId/replies', authMiddleware, async (req, res) => {
       isDeleted: false,
     })
       .sort({ createdAt: 1 })
-      .populate('sender', '_id anonymousId reputation')
+      .populate('sender', '_id anonymousId nickname reputation')
+      .populate({
+        path: 'parentMessage',
+        select: '_id content',
+        populate: {
+          path: 'sender',
+          select: 'nickname anonymousId'
+        }
+      })
       .lean();
 
     res.json({
@@ -288,7 +304,7 @@ router.post('/:messageId/reply', authMiddleware, async (req, res) => {
       parentMessage: messageId,
     });
 
-    await reply.populate('sender', '_id anonymousId reputation');
+    await reply.populate('sender', '_id anonymousId nickname reputation');
 
     // Broadcast new reply via Socket.io
     const io = req.app.get('io');

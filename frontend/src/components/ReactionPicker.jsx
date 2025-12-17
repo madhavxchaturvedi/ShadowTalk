@@ -1,25 +1,38 @@
 import { useState } from 'react';
 
 const ReactionPicker = ({ onReact, onClose }) => {
-  const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥', '👏', '💯'];
+  const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥', '👏', '💯', '✨', '💪'];
 
   return (
-    <div className="absolute bottom-full mb-2 left-0 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg p-2 shadow-lg z-50">
-      <div className="flex gap-1">
-        {commonEmojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => {
-              onReact(emoji);
-              onClose();
-            }}
-            className="text-2xl hover:scale-125 transition-transform p-1"
-          >
-            {emoji}
-          </button>
-        ))}
+    <>
+      {/* Backdrop to close on outside click */}
+      <div 
+        className="fixed inset-0 z-40" 
+        onClick={onClose}
+        style={{ background: 'transparent' }}
+      />
+      
+      {/* Picker */}
+      <div className="reaction-picker">
+        <div className="reaction-picker-header">
+          <span>Pick a reaction</span>
+        </div>
+        <div className="reaction-picker-grid">
+          {commonEmojis.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => {
+                onReact(emoji);
+                onClose();
+              }}
+              className="reaction-emoji-btn"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

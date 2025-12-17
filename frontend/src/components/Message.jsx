@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { FiClock } from 'react-icons/fi';
+import { FiClock, FiCornerUpRight, FiMoreVertical } from 'react-icons/fi';
+import { HiOutlineFaceSmile, HiOutlineChatBubbleLeftRight, HiOutlineFlag } from 'react-icons/hi2';
 import api from '../services/api';
 import { socket } from '../services/socket';
 import ReactionPicker from './ReactionPicker';
@@ -14,6 +15,7 @@ const Message = ({ message, onReply, isReply = false }) => {
   const { user } = useSelector((state) => state.auth);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const [reactions, setReactions] = useState(message.reactions || []);
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState([]);
@@ -22,6 +24,36 @@ const Message = ({ message, onReply, isReply = false }) => {
   const [sendingReply, setSendingReply] = useState(false);
 
   const isOwnMessage = message.sender._id === user._id;
+
+  // Get display name - only show nickname or Anonymous (never expose IDs)
+  const getDisplayName = () => {
+    if (message.sender.nickname && message.sender.nickname.trim()) {
+      return message.sender.nickname;
+    }
+    // Show Anonymous with last 4 chars of anonymousId to distinguish users
+    const anonymousId = message.sender.anonymousId || message.sender._id;
+    const idSuffix = anonymousId.slice(-4);
+    return `Anonymous #${idSuffix}`;
+  };
+
+  // Get avatar initial
+  const getAvatarInitial = () => {
+    const displayName = getDisplayName();
+    return displayName.charAt(0).toUpperCase();
+  };
+
+  // Format timestamp
+  const formatTime = (date) => {
+    const now = new Date();
+    const messageDate = new Date(date);
+    const diffMs = now - messageDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return messageDate.toLocaleDateString();
+  };
 
   // Listen for real-time reaction updates
   useEffect(() => {
@@ -124,170 +156,195 @@ const Message = ({ message, onReply, isReply = false }) => {
   };
 
   return (
-    <div className={`${isReply ? 'ml-8 mt-2' : ''}`}>
-      <div
-        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-      >
-        <div
-          style={{
-            maxWidth: '65%',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            background: isOwnMessage ? 'var(--accent)' : '#1f1f1f',
-            color: 'white',
-            position: 'relative',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-            border: isOwnMessage ? 'none' : '1px solid #2a2a2a',
-            opacity: message.isPending ? 0.6 : 1,
-            transition: 'opacity 0.3s ease'
-          }}
-        >
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', fontWeight: '500' }}>
-            {message.sender.nickname || 'Anonymous'}
-            {message.isPending && (
-              <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                <FiClock className="w-3 h-3" /> Sending...
-              </span>
-            )}
+    <>
+      <div className={`message-wrapper ${isReply ? 'message-reply' : ''}`}>
+        {/* Avatar */}
+        <div className="message-avatar">
+          <div className="avatar-circle">
+            {getAvatarInitial()}
           </div>
-          <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-            {message.content}
-          </div>
-          <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '6px', textAlign: 'right' }}>
-            {new Date(message.createdAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
+          {message.sender.reputation?.level && (
+            <div className="level-badge">{message.sender.reputation.level}</div>
+          )}
+        </div>
 
-          {/* Reactions */}
-          {reactions.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
-              {reactions.map((reaction, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleReact(reaction.emoji)}
-                  style={{
-                    fontSize: '13px',
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    background: reaction.users.includes(user._id) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                    border: reaction.users.includes(user._id) ? '1px solid var(--accent)' : '1px solid #2a2a2a',
-                    color: 'white',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = reaction.users.includes(user._id) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)'}
-                >
-                  {reaction.emoji} {reaction.users.length}
-                </button>
-              ))}
-            </div>
+        {/* Content */}
+        <div className="message-content-wrapper">
+        {/* Reply Reference (if this is a reply) */}
+        {isReply && message.parentMessage && (
+          <div className="reply-reference">
+            <FiCornerUpRight className="reply-icon" />
+            <span className="reply-to-text">
+              Reply to <span className="reply-to-name">{message.parentMessage.sender?.nickname || 'Anonymous'}</span>
+            </span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="message-header">
+          <span 
+            className="username"
+            onClick={() => !isOwnMessage && message.sender?._id && navigate(`/dm/${message.sender._id}`)}
+            style={{ cursor: !isOwnMessage && message.sender?._id ? 'pointer' : 'default' }}
+          >
+            {getDisplayName()}
+          </span>
+          {isOwnMessage && (
+            <span className="you-badge">You</span>
+          )}
+          {message.sender.reputation?.level && (
+            <span className="user-level">Level {message.sender.reputation.level}</span>
+          )}
+          <span className="timestamp">
+            {formatTime(message.createdAt)}
+          </span>
+          {message.isPending && (
+            <span className="pending-indicator">
+              <FiClock className="w-3 h-3" /> Sending...
+            </span>
           )}
 
-          {/* Action buttons */}
-          {!isReply && (
-            <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '12px', opacity: 0.65 }}>
-              <button
-                onClick={() => setShowReactionPicker(!showReactionPicker)}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
-              >
-                React
-              </button>
+          {/* Hover Actions */}
+          <div className="message-actions">
+            <button
+              onClick={() => setShowReactionPicker(!showReactionPicker)}
+              className="action-btn"
+              title="Add Reaction"
+            >
+              <HiOutlineFaceSmile />
+            </button>
+            {!isReply && (
               <button
                 onClick={loadReplies}
-                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
+                className="action-btn"
+                title="Reply"
               >
-                {showReplies ? 'Hide Replies' : 'Reply'} {replies.length > 0 && `(${replies.length})`}
+                <HiOutlineChatBubbleLeftRight />
               </button>
-              {!isOwnMessage && message.sender?._id && (
-                <>
-                  <button
-                    onClick={() => navigate(`/dm/${message.sender._id}`)}
-                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
-                  >
-                    DM
-                  </button>
-                  <button
-                    onClick={() => setShowReportModal(true)}
-                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', transition: 'opacity 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.65'}
-                  >
-                    Report
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+            )}
+            {!isOwnMessage && message.sender?._id && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="action-btn action-btn-danger"
+                title="Report"
+              >
+                <HiOutlineFlag />
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Report Modal */}
-          {showReportModal && (
-            <ReportModal
-              isOpen={showReportModal}
-              onClose={() => setShowReportModal(false)}
-              reportedMessageId={message._id}
-              messageType="Message"
-              reportedUserId={message.sender._id}
-              reportedUserName={message.sender.anonymousId}
-            />
-          )}
+        {/* Message Body */}
+        <div className="message-body" style={{ opacity: message.isPending ? 0.6 : 1 }}>
+          {message.content}
+        </div>
 
-          {/* Reaction Picker */}
-          {showReactionPicker && (
+        {/* Reactions */}
+        {reactions.length > 0 && (
+          <div className="message-reactions">
+            {reactions.map((reaction, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleReact(reaction.emoji)}
+                className={`reaction-chip ${reaction.users.includes(user._id) ? 'active' : ''}`}
+              >
+                <span className="reaction-emoji">{reaction.emoji}</span>
+                <span className="reaction-count">{reaction.users.length}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => setShowReactionPicker(!showReactionPicker)}
+              className="reaction-chip reaction-add"
+              title="Add Reaction"
+            >
+              +
+            </button>
+          </div>
+        )}
+
+        {/* Reply Thread Indicator - Always show if has replies */}
+        {!isReply && (replies.length > 0 || message.replyCount > 0) && !showReplies && (
+          <button onClick={loadReplies} className="reply-indicator">
+            <FiCornerUpRight className="w-4 h-4" />
+            {replies.length || message.replyCount || 0} {(replies.length || message.replyCount) === 1 ? 'reply' : 'replies'}
+          </button>
+        )}
+
+        {/* Reaction Picker */}
+        {showReactionPicker && (
+          <div style={{ position: 'relative', marginTop: '8px' }}>
             <ReactionPicker
               onReact={handleReact}
               onClose={() => setShowReactionPicker(false)}
             />
-          )}
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Replies */}
-      {!isReply && showReplies && (
-        <div className="mt-2 ml-8 space-y-2">
-          {loadingReplies ? (
-            <div className="text-sm text-[var(--text-secondary)]">Loading replies...</div>
-          ) : (
-            <>
+        {/* Report Modal */}
+        {showReportModal && (
+          <ReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            reportedMessageId={message._id}
+            messageType="Message"
+            reportedUserId={message.sender._id}
+            reportedUserName={message.sender.anonymousId}
+          />
+        )}
+      </div>
+    </div>
+
+    {/* Replies Section - Outside message wrapper for proper layout */}
+    {!isReply && showReplies && (
+      <div className="replies-section">
+        {loadingReplies ? (
+          <div className="replies-loading">
+            <div className="spinner-small"></div>
+            <span>Loading replies...</span>
+          </div>
+        ) : (
+          <>
+            <div className="replies-list">
               {replies.map((reply) => (
                 <Message key={reply._id} message={reply} isReply={true} />
               ))}
-              
-              {/* Reply input */}
-              <form onSubmit={handleSendReply} className="flex gap-2">
+            </div>
+            
+            {/* Reply input - compact inline style */}
+            <div className="reply-input-container">
+              <div className="reply-input-avatar">
+                {(user.nickname || 'A').charAt(0).toUpperCase()}
+              </div>
+              <form onSubmit={handleSendReply} className="reply-input-form">
                 <input
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Write a reply..."
+                  placeholder="Add a reply..."
                   disabled={sendingReply}
-                  className="flex-1 px-3 py-2 text-sm bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50"
+                  className="reply-text-input"
                   maxLength={2000}
                 />
-                <button
-                  type="submit"
-                  disabled={!replyText.trim() || sendingReply}
-                  className="px-4 py-2 text-sm bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sendingReply ? 'Sending...' : 'Reply'}
-                </button>
+                {replyText.trim() && (
+                  <button
+                    type="submit"
+                    disabled={sendingReply}
+                    className="reply-send-btn"
+                  >
+                    {sendingReply ? (
+                      <div className="spinner-tiny"></div>
+                    ) : (
+                      '→'
+                    )}
+                  </button>
+                )}
               </form>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+            </div>
+          </>
+        )}
+      </div>
+    )}
+  </>
   );
 };
 

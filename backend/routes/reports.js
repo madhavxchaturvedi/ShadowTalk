@@ -69,7 +69,7 @@ router.get('/', authMiddleware, async (req, res) => {
           : (await import('../models/PrivateMessage.js')).default;
         
         report.reportedMessage = await Model.findById(report.reportedMessage)
-          .populate('sender', '_id anonymousId')
+          .populate('sender', '_id anonymousId nickname')
           .lean();
       }
     }

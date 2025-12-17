@@ -1,15 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
-import { HiHome, HiChatBubbleLeftRight, HiUser, HiShieldCheck, HiMoon, HiArrowRightOnRectangle } from 'react-icons/hi2';
+import { HiHome, HiChatBubbleLeftRight, HiUser, HiShieldCheck, HiMoon, HiArrowRightOnRectangle, HiSparkles } from 'react-icons/hi2';
+import { useState } from 'react';
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
+    setShowProfileMenu(false);
   };
 
   const navItems = [
@@ -24,8 +27,13 @@ const Navbar = () => {
       {/* Sidebar Header */}
       <div className="sidebar-header">
         <Link to="/" className="sidebar-logo">
-          <HiMoon className="sidebar-logo-icon" />
-          <span>ShadowTalk</span>
+          <div className="logo-icon-wrapper">
+            <HiMoon className="sidebar-logo-icon" />
+          </div>
+          <div className="logo-text">
+            <span className="logo-main">ShadowTalk</span>
+            <span className="logo-tagline">Anonymous Chat</span>
+          </div>
         </Link>
       </div>
 
@@ -35,14 +43,18 @@ const Navbar = () => {
           <div className="nav-section-title">Navigation</div>
           {navItems.map((item) => {
             const IconComponent = item.icon;
+            const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                className={`nav-item ${isActive ? 'active' : ''}`}
               >
-                <IconComponent className="nav-item-icon" />
-                <span>{item.label}</span>
+                <div className="nav-item-content">
+                  <IconComponent className="nav-item-icon" />
+                  <span>{item.label}</span>
+                </div>
+                {isActive && <div className="nav-item-indicator"></div>}
               </Link>
             );
           })}
@@ -52,23 +64,35 @@ const Navbar = () => {
       {/* User Profile Footer */}
       {user && (
         <div className="sidebar-footer">
-          <div className="user-profile">
+          <div 
+            className={`user-profile ${showProfileMenu ? 'menu-open' : ''}`}
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+          >
             <div className="user-avatar">
-              {user.nickname?.charAt(0).toUpperCase() || 'A'}
+              <span className="avatar-text">{user.nickname?.charAt(0).toUpperCase() || 'A'}</span>
+              <div className="status-indicator online"></div>
             </div>
             <div className="user-info">
               <div className="user-name">
                 {user.nickname || 'Anonymous'}
               </div>
               <div className="user-status">
-                {user.shadowId ? `ID: ${user.shadowId}` : `Level ${user.reputation?.level || 1}`}
+                <div className="level-badge-small">
+                  <HiSparkles className="level-icon" />
+                  Level {user.reputation?.level || 1}
+                </div>
               </div>
             </div>
           </div>
-          <button onClick={handleLogout} className="logout-btn">
-            <HiArrowRightOnRectangle style={{ fontSize: '18px' }} />
-            <span>Logout</span>
-          </button>
+          
+          {showProfileMenu && (
+            <div className="profile-menu">
+              <button onClick={handleLogout} className="profile-menu-item logout">
+                <HiArrowRightOnRectangle className="menu-icon" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </aside>
@@ -76,3 +100,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
