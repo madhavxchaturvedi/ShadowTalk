@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiClock } from 'react-icons/fi';
+import { HiArrowLeft, HiPaperAirplane, HiShieldExclamation, HiNoSymbol, HiCheckCircle } from 'react-icons/hi2';
 import api from '../services/api';
 import { socket } from '../services/socket';
+import Message from '../components/Message';
 import ReportModal from '../components/ReportModal';
 import { updateUser } from '../store/slices/authSlice';
 
@@ -200,38 +201,28 @@ const DirectMessage = () => {
 
   return (
     <div className="room-page">
+      {/* Header */}
       <div className="room-header">
-        <button
-          onClick={() => navigate('/dms')}
-          className="back-button"
-        >
-          ← Back
+        <button onClick={() => navigate('/dms')} className="back-button">
+          <HiArrowLeft className="back-icon" />
+          <span>Back</span>
         </button>
-        <div className="room-info" style={{ flex: 1 }}>
-          <h1>
-            {otherUser?.anonymousId || 'Direct Message'}
-          </h1>
+        
+        <div className="room-info">
+          <h1>{otherUser?.nickname || otherUser?.anonymousId || 'Direct Message'}</h1>
           {otherUser && (
-            <p>
-              Level {otherUser.reputation.level} • {otherUser.reputation.points} points
-            </p>
+            <p>Level {otherUser.reputation.level} • {otherUser.reputation.points} points</p>
           )}
         </div>
+
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setShowReportModal(true)}
-            style={{ 
-              padding: '8px 16px', 
-              background: 'var(--bg-tertiary)', 
-              border: 'none', 
-              borderRadius: '8px',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s ease'
-            }}
+            className="icon-btn"
+            title="Report User"
+            style={{ background: 'var(--bg-tertiary)' }}
           >
-            🚨 Report
+            <HiShieldExclamation />
           </button>
           <button
             onClick={async () => {
@@ -257,100 +248,54 @@ const DirectMessage = () => {
                 }
               }
             }}
+            className="icon-btn"
+            title={isBlocked ? 'Unblock User' : 'Block User'}
             style={{ 
-              padding: '8px 16px', 
-              background: isBlocked ? '#10b981' : '#ef4444', 
-              border: 'none', 
-              borderRadius: '8px',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s ease'
+              background: isBlocked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: isBlocked ? 'var(--accent)' : '#ef4444'
             }}
           >
-            {isBlocked ? '✓ Unblock' : '🚫 Block'}
+            {isBlocked ? <HiCheckCircle /> : <HiNoSymbol />}
           </button>
         </div>
       </div>
 
+      {/* Messages Area */}
       <div className="room-messages">
-        <div className="messages-container">
+        <div className="messages-list">
           {messages.length === 0 ? (
-            <div className="empty-state">
-              <p className="text-lg">No messages yet</p>
-              <p className="text-sm" style={{ marginTop: '8px' }}>Start the conversation!</p>
+            <div className="empty-state" style={{ textAlign: 'center', padding: '80px 24px' }}>
+              <p style={{ fontSize: '18px', marginBottom: '8px' }}>No messages yet</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Start the conversation!</p>
             </div>
           ) : (
             messages.map((msg) => (
-              <div
+              <Message
                 key={msg._id}
-                style={{ 
-                  display: 'flex',
-                  justifyContent: msg.sender._id === user._id ? 'flex-end' : 'flex-start'
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: '60%',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    background: msg.sender._id === user._id ? 'var(--accent)' : 'var(--bg-secondary)',
-                    border: msg.sender._id === user._id ? 'none' : '1px solid var(--border)',
-                    color: msg.sender._id === user._id ? 'white' : 'var(--text-primary)',
-                    opacity: msg.isPending ? 0.6 : 1,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <div style={{ fontSize: '12px', opacity: 0.75, marginBottom: '4px' }}>
-                    {msg.sender.nickname || 'Anonymous'}
-                    {msg.isPending && (
-                      <span style={{ marginLeft: '6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                        <FiClock className="w-3 h-3" /> Sending...
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
-              </div>
+                message={msg}
+                currentUserId={user._id}
+                isDM={true}
+              />
             ))
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        reportedUserId={userId}
-        reportedUserName={otherUser?.anonymousId}
-      />
-
+      {/* Message Input */}
       <div className="room-input">
         {connectionSlow && (
-          <div style={{
-            padding: '8px 16px',
-            backgroundColor: 'rgba(251, 191, 36, 0.1)',
-            borderLeft: '3px solid #fbbf24',
-            marginBottom: '8px',
-            borderRadius: '4px',
-            fontSize: '14px',
-            color: '#fbbf24',
-          }}>
+          <div className="connection-warning">
             ⚠️ Server is waking up... This may take 30-60 seconds on first request.
           </div>
         )}
+        
         <form onSubmit={handleSendMessage} className="message-form">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={`Message ${otherUser?.nickname || 'user'}...`}
             disabled={sending}
             className="message-input"
             maxLength={2000}
@@ -360,10 +305,21 @@ const DirectMessage = () => {
             disabled={!newMessage.trim() || sending}
             className="send-button"
           >
-            {sending ? 'Sending...' : 'Send'}
+            {sending ? (
+              <div className="btn-spinner-small"></div>
+            ) : (
+              <HiPaperAirplane className="send-icon" />
+            )}
           </button>
         </form>
       </div>
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        reportedUserId={userId}
+        reportedUserName={otherUser?.anonymousId}
+      />
     </div>
   );
 };

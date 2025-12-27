@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { HiArrowLeft, HiPaperAirplane } from 'react-icons/hi2';
 import api from '../services/api';
 import { socket, connectSocket, disconnectSocket } from '../services/socket';
 import Message from '../components/Message';
@@ -18,8 +19,10 @@ const Room = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [connectionSlow, setConnectionSlow] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const slowConnectionTimerRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -72,6 +75,20 @@ const Room = () => {
       });
     };
 
+    const handleUserTyping = ({ userId, nickname }) => {
+      if (userId === user._id) return; // Don't show own typing
+      setTypingUsers(prev => {
+        if (!prev.find(u => u.userId === userId)) {
+          return [...prev, { userId, nickname: nickname || 'Anonymous' }];
+        }
+        return prev;
+      });
+    };
+
+    const handleUserStoppedTyping = ({ userId }) => {
+      setTypingUsers(prev => prev.filter(u => u.userId !== userId));
+    };
+
     // Connect socket if not already connected
     if (!socket.connected) {
       connectSocket();
@@ -80,15 +97,37 @@ const Room = () => {
     // Join room
     socket.emit('join_room', roomId);
 
-    // Listen for new messages
+    // Listen for events
     socket.on('new_message', handleNewMessage);
+    socket.on('user_typing', handleUserTyping);
+    socket.on('user_stopped_typing', handleUserStoppedTyping);
 
     return () => {
-      // Leave room and remove listener
+      // Leave room and remove listeners
       socket.emit('leave_room', roomId);
       socket.off('new_message', handleNewMessage);
+      socket.off('user_typing', handleUserTyping);
+      socket.off('user_stopped_typing', handleUserStoppedTyping);
     };
   }, [roomId, user?._id]); // Only depend on roomId and user ID, not entire user object
+
+  // Handle typing indicator
+  const handleTyping = () => {
+    if (!socket || !user) return;
+    
+    // Emit typing event
+    socket.emit('typing', { roomId, userId: user._id, nickname: user.nickname });
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set timeout to stop typing indicator after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('stopped_typing', { roomId, userId: user._id });
+    }, 2000);
+  };
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -102,6 +141,14 @@ const Room = () => {
     const messageContent = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
     
+    // Stop typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    if (socket) {
+      socket.emit('stopped_typing', { roomId, userId: user._id });
+    }
+    
     // Optimistic update - show message immediately
     const optimisticMessage = {
       _id: tempId,
@@ -109,6 +156,7 @@ const Room = () => {
       sender: {
         _id: user._id,
         anonymousId: user.anonymousId,
+        nickname: user.nickname,
         reputation: user.reputation,
       },
       room: roomId,
@@ -162,17 +210,11 @@ const Room = () => {
         clearTimeout(slowConnectionTimerRef.current);
       }
       setConnectionSlow(false);
-      
+
       // Remove optimistic message on error
-      setMessages((prev) => prev.filter(msg => msg._id !== tempId));
-      
-      // Restore message text so user can retry
-      setNewMessage(messageContent);
-      
-      // Show specific error message
-      if (error.response?.status === 429) {
-        alert('You are sending messages too quickly. Please wait a moment and try again.');
-      } else if (error.response?.status === 403) {
+      setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
+
+      if (error.response?.status === 403) {
         alert('You do not have permission to send messages in this room.');
       } else {
         alert('Failed to send message. Please check your connection and try again.');
@@ -184,8 +226,8 @@ const Room = () => {
 
   if (loading) {
     return (
-      <div className="page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
-        <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
+      <div className="spinner-container">
+        <div className="spinner"></div>
       </div>
     );
   }
@@ -198,7 +240,8 @@ const Room = () => {
           onClick={() => navigate('/')}
           className="back-button"
         >
-          ← Back
+          <HiArrowLeft className="back-icon" />
+          <span>Back</span>
         </button>
         <div className="room-info">
           <h1>
@@ -232,17 +275,15 @@ const Room = () => {
       {room?.roomType !== 'voice' && (
         <>
           <div className="room-messages">
-            <div className="messages-container">
-              {messages.length === 0 ? (
-                <div className="empty-state">
-                  <p className="text-lg">No messages yet</p>
-                  <p className="text-sm" style={{ marginTop: '8px' }}>Be the first to start the conversation!</p>
-                </div>
-              ) : (
-                messages.map((message) => (
-                  <Message key={message._id} message={message} />
-                ))
-              )}
+            <div className="messages-list">
+              {messages.map((message) => (
+                <Message
+                  key={message._id}
+                  message={message}
+                  currentUserId={user._id}
+                  roomId={roomId}
+                />
+              ))}
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -250,24 +291,37 @@ const Room = () => {
           {/* Message Input */}
           <div className="room-input">
             {connectionSlow && (
-              <div style={{
-                padding: '8px 16px',
-                backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                borderLeft: '3px solid #fbbf24',
-                marginBottom: '8px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                color: '#fbbf24',
-              }}>
+              <div className="connection-warning">
                 ⚠️ Server is waking up... This may take 30-60 seconds on first request.
               </div>
             )}
+            
+            {typingUsers.length > 0 && (
+              <div className="typing-indicator">
+                <div className="typing-dots">
+                  <div className="typing-dot"></div>
+                  <div className="typing-dot"></div>
+                  <div className="typing-dot"></div>
+                </div>
+                <span>
+                  {typingUsers.length === 1
+                    ? `${typingUsers[0].nickname} is typing...`
+                    : typingUsers.length === 2
+                    ? `${typingUsers[0].nickname} and ${typingUsers[1].nickname} are typing...`
+                    : `${typingUsers.length} people are typing...`}
+                </span>
+              </div>
+            )}
+            
             <form onSubmit={handleSendMessage} className="message-form">
               <input
                 type="text"
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  handleTyping();
+                }}
+                placeholder={`Message #${room?.name || 'room'}`}
                 disabled={sending}
                 className="message-input"
                 maxLength={2000}
@@ -277,7 +331,11 @@ const Room = () => {
                 disabled={!newMessage.trim() || sending}
                 className="send-button"
               >
-                {sending ? 'Sending...' : 'Send'}
+                {sending ? (
+                  <div className="btn-spinner-small"></div>
+                ) : (
+                  <HiPaperAirplane className="send-icon" />
+                )}
               </button>
             </form>
           </div>

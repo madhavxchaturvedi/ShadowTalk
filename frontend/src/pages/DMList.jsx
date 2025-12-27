@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { HiChatBubbleLeftRight, HiArrowLeft, HiSparkles } from 'react-icons/hi2';
 import api from '../services/api';
 
 const DMList = () => {
@@ -43,83 +44,89 @@ const DMList = () => {
 
   if (loading) {
     return (
-      <div className="page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px' }}>
-        <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
+      <div className="dm-list-page">
+        <div className="loading-container">
+          <div className="spinner"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="page-wrapper">
-      <div className="main-header">
-        <div>
-          <h1>Direct Messages</h1>
-          <p>Private conversations</p>
+    <div className="dm-list-page">
+      {/* Header */}
+      <div className="dm-header">
+        <div className="dm-header-content">
+          <div className="dm-header-text">
+            <div className="dm-title-row">
+              <HiChatBubbleLeftRight className="dm-title-icon" />
+              <h1 className="dm-title">Direct Messages</h1>
+            </div>
+            <p className="dm-subtitle">Private conversations</p>
+          </div>
+          <button onClick={() => navigate('/')} className="btn-back">
+            <HiArrowLeft />
+            Back to Rooms
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/')}
-          style={{ 
-            padding: '12px 24px', 
-            background: 'var(--bg-secondary)', 
-            border: '1px solid var(--border)', 
-            borderRadius: '12px',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.target.style.borderColor = 'var(--accent)'}
-          onMouseLeave={(e) => e.target.style.borderColor = 'var(--border)'}
-        >
-          Back to Rooms
-        </button>
       </div>
 
-      <div className="main-body">{conversations.length === 0 ? (
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-12 text-center">
-          <h3 className="text-xl font-bold mb-2">No conversations yet</h3>
-          <p className="text-[var(--text-secondary)]">
-            Start a conversation by clicking on a user's profile in a room
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {conversations.map((conv) => (
-            <div
-              key={conv.user._id}
-              onClick={() => navigate(`/dm/${conv.user._id}`)}
-              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-bold">
-                      {conv.user.nickname || `User ${conv.user._id.slice(-6)}`}
-                    </h3>
-                    <span className="text-xs text-[var(--text-secondary)]">
-                      Level {conv.user.reputation?.level || 1}
-                    </span>
-                    {conv.unreadCount > 0 && (
-                      <span className="bg-[var(--accent)] text-white text-xs px-2 py-1 rounded-full">
-                        {conv.unreadCount}
+      {/* Conversations List */}
+      <div className="dm-main">
+        {conversations.length === 0 ? (
+          <div className="dm-empty-state">
+            <div className="dm-empty-icon">
+              <HiChatBubbleLeftRight />
+            </div>
+            <h3 className="dm-empty-title">No conversations yet</h3>
+            <p className="dm-empty-text">
+              Start a conversation by clicking on a user's profile in a room
+            </p>
+          </div>
+        ) : (
+          <div className="dm-conversations">
+            {conversations.map((conv) => (
+              <div
+                key={conv.user._id}
+                onClick={() => navigate(`/dm/${conv.user._id}`)}
+                className="dm-conversation-card"
+              >
+                <div className="dm-conv-avatar">
+                  {(conv.user.nickname || conv.user.anonymousId || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div className="dm-conv-content">
+                  <div className="dm-conv-header">
+                    <div className="dm-conv-user">
+                      <span className="dm-conv-name">
+                        {conv.user.nickname || `User ${conv.user._id.slice(-6)}`}
+                      </span>
+                      <span className="dm-conv-level">
+                        <HiSparkles />
+                        Level {conv.user.reputation?.level || 1}
+                      </span>
+                    </div>
+                    {conv.lastMessage && (
+                      <span className="dm-conv-time">
+                        {new Date(conv.lastMessage.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
                       </span>
                     )}
                   </div>
                   {conv.lastMessage && (
-                    <p className="text-sm text-[var(--text-secondary)] mt-1 truncate">
+                    <p className="dm-conv-preview">
                       {conv.lastMessage.content}
                     </p>
                   )}
                 </div>
-                {conv.lastMessage && (
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    {new Date(conv.lastMessage.createdAt).toLocaleDateString()}
-                  </div>
+                {conv.unreadCount > 0 && (
+                  <div className="dm-conv-badge">{conv.unreadCount}</div>
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

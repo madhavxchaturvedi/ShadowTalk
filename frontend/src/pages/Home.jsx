@@ -3,18 +3,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchRooms, fetchMyRooms, setFilters } from '../store/slices/roomsSlice';
 import CreateRoomModal from '../components/CreateRoomModal';
 import RoomCard from '../components/RoomCard';
-import { HiHome, HiPlus } from 'react-icons/hi2';
+import SkeletonLoader from '../components/SkeletonLoader';
+import { HiPlus, HiMagnifyingGlass, HiHome } from 'react-icons/hi2';
 
 const Home = () => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
-  const { allRooms, loading, filters } = useSelector((state) => state.rooms);
+  const { allRooms, myRooms, loading, filters } = useSelector((state) => state.rooms);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
 
   const topics = [
     'all', 'General', 'Technology', 'Gaming', 'Music', 'Movies',
-    'Sports', 'Art', 'Books', 'Food', 'Travel',
-    'Mental Health', 'Relationships', 'Career', 'Hobbies', 'Other'
+    'Sports', 'Art', 'Books', 'Food'
   ];
 
   // Fetch rooms when component mounts or when authenticated
@@ -29,80 +30,90 @@ const Home = () => {
     dispatch(setFilters({ topic }));
   };
 
-  const handleSortChange = (sort) => {
-    dispatch(setFilters({ sort }));
+  const handleSearch = (value) => {
+    setSearchInput(value);
+    const timer = setTimeout(() => {
+      dispatch(setFilters({ search: value }));
+    }, 300);
+    return () => clearTimeout(timer);
   };
 
   return (
-    <>
+    <div className="home-page">
       {/* Header */}
-      <div className="main-header">
-        <div>
-          <h1>Discover Rooms</h1>
-          <p>Join anonymous communities and start chatting</p>
+      <div className="home-header">
+        <div className="home-header-content">
+          <div>
+            <h1 className="home-title">Discover Rooms</h1>
+            <p className="home-subtitle">Join conversations anonymously</p>
+          </div>
+          <button onClick={() => setShowCreateModal(true)} className="btn-create-room">
+            <HiPlus />
+            Create Room
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="create-room-btn"
-        >
-          <HiPlus style={{ fontSize: '20px' }} />
-          <span>Create Room</span>
-        </button>
       </div>
 
-      <div className="main-body">
-
-
-        {/* Filters */}
-        <div className="filter-section">
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '12px', textTransform: 'uppercase' }}>Filter by Topic</label>
-            <div className="filter-chips">
-              {topics.map(topic => (
-                <button
-                  key={topic}
-                  onClick={() => handleTopicChange(topic)}
-                  className={`filter-chip ${filters.topic === topic ? 'active' : ''}`}
-                >
-                  {topic.charAt(0).toUpperCase() + topic.slice(1)}
-                </button>
-              ))}
-            </div>
+      {/* Main Content */}
+      <div className="home-main">
+        {/* Search & Filters Bar */}
+        <div className="home-toolbar">
+          <div className="search-bar">
+            <HiMagnifyingGlass className="search-icon" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search rooms..."
+              className="search-input"
+            />
           </div>
+          
+          <select
+            value={filters.sort}
+            onChange={(e) => dispatch(setFilters({ sort: e.target.value }))}
+            className="sort-select"
+          >
+            <option value="trending">🔥 Trending</option>
+            <option value="popular">⭐ Popular</option>
+            <option value="newest">✨ Newest</option>
+            <option value="active">💬 Active</option>
+          </select>
+        </div>
 
-          <div style={{ width: '200px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '12px', textTransform: 'uppercase' }}>Sort By</label>
-            <select
-              value={filters.sort}
-              onChange={(e) => handleSortChange(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', color: 'white', fontSize: '14px', cursor: 'pointer' }}
-            >
-              <option value="trending">Trending</option>
-              <option value="popular">Most Popular</option>
-              <option value="newest">Newest</option>
-              <option value="active">Most Active</option>
-            </select>
+        {/* Topic Filters */}
+        <div className="topic-filters">
+          <span className="filter-label">Topics:</span>
+          <div className="topic-chips">
+            {topics.map(topic => (
+              <button
+                key={topic}
+                onClick={() => handleTopicChange(topic)}
+                className={`topic-chip ${filters.topic === topic ? 'active' : ''}`}
+              >
+                {topic.charAt(0).toUpperCase() + topic.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Room List */}
+        {/* Rooms Grid */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 20px' }}>
-            <div className="w-12 h-12 border-4 border-[var(--bg-tertiary)] border-t-[var(--accent)] rounded-full animate-spin"></div>
-          </div>
+          <SkeletonLoader type="card" count={6} />
         ) : allRooms.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', marginTop: '24px' }}>
-            <HiHome style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
-            <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>No rooms found</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
-              Be the first to create a room in this category!
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <HiHome />
+            </div>
+            <h3 className="empty-state-title">No rooms found</h3>
+            <p className="empty-state-text">
+              {filters.search 
+                ? 'Try different search terms or filters'
+                : 'Be the first to create a room!'}
             </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              style={{ padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-            >
-              <HiPlus style={{ fontSize: '18px' }} />
-              Create First Room
+            <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+              <HiPlus />
+              Create Room
             </button>
           </div>
         ) : (
@@ -119,7 +130,7 @@ const Home = () => {
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)} 
       />
-    </>
+    </div>
   );
 };
 

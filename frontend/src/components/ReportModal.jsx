@@ -1,11 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { HiXMark, HiShieldExclamation } from 'react-icons/hi2';
 import api from '../services/api';
+import Toast from './Toast';
 
 const ReportModal = ({ isOpen, onClose, reportedUserId, reportedMessageId, messageType, reportedUserName }) => {
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200);
+  };
 
   const reasons = [
     { value: 'spam', label: 'Spam or Scam' },
@@ -36,10 +59,12 @@ const ReportModal = ({ isOpen, onClose, reportedUserId, reportedMessageId, messa
         description,
       });
 
-      alert('Report submitted successfully. Our team will review it.');
-      onClose();
-      setReason('');
-      setDescription('');
+      setShowToast(true);
+      setTimeout(() => {
+        setReason('');
+        setDescription('');
+        handleClose();
+      }, 1500);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to submit report');
     } finally {
@@ -50,87 +75,116 @@ const ReportModal = ({ isOpen, onClose, reportedUserId, reportedMessageId, messa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--bg-secondary)] rounded-lg max-w-md w-full p-6 border border-[var(--border)]">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Report User</h2>
-          <button
-            onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        {reportedUserName && (
-          <p className="text-sm text-[var(--text-secondary)] mb-4">
-            Reporting: <span className="text-white font-medium">{reportedUserName}</span>
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Reason <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white focus:outline-none focus:border-[var(--accent)]"
-              required
-            >
-              <option value="">Select a reason...</option>
-              {reasons.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Additional Details (Optional)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] resize-none"
-              rows="4"
-              maxLength="500"
-              placeholder="Provide more context about this report..."
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              {description.length}/500 characters
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-500 bg-opacity-10 border border-red-500 rounded-lg text-red-500 text-sm">
-              {error}
+    <>
+      {showToast && (
+        <Toast 
+          message="Report submitted successfully. Our team will review it."
+          type="success"
+          isVisible={showToast}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+      
+      <div 
+        className={`modal-overlay ${isClosing ? 'closing' : ''}`}
+        onClick={(e) => e.target === e.currentTarget && handleClose()}
+      >
+        <div className={`modal-content report-modal ${isClosing ? 'closing' : ''}`}>
+          <div className="modal-header">
+            <div className="flex items-center gap-3">
+              <div className="report-icon">
+                <HiShieldExclamation />
+              </div>
+              <h2 className="modal-title">Report User</h2>
             </div>
-          )}
-
-          <div className="flex gap-3">
             <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-[var(--bg-tertiary)] rounded-lg hover:bg-opacity-80 transition-colors"
-              disabled={loading}
+              onClick={handleClose}
+              className="modal-close"
+              aria-label="Close modal"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-red-500 rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? 'Submitting...' : 'Submit Report'}
+              <HiXMark />
             </button>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit} className="modal-form">
+            {reportedUserName && (
+              <div className="report-target">
+                <span className="text-[var(--text-muted)]">Reporting:</span>
+                <span className="text-white font-semibold">{reportedUserName}</span>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">
+                Reason <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="form-select"
+                required
+                autoFocus
+              >
+                <option value="">Select a reason...</option>
+                {reasons.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Additional Details <span className="text-[var(--text-muted)] text-xs">(Optional)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="form-textarea"
+                rows="4"
+                maxLength="500"
+                placeholder="Provide more context about this report..."
+              />
+              <p className="form-hint">
+                {description.length}/500 characters
+              </p>
+            </div>
+
+            {error && (
+              <div className="error-alert">
+                ⚠️ {error}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="btn-secondary"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-danger"
+                disabled={loading || !reason}
+              >
+                {loading ? (
+                  <>
+                    <div className="btn-spinner-small"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Report'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

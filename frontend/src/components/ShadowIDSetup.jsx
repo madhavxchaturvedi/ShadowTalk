@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiUserPlus, FiLogIn, FiShield, FiLock, FiCheck, FiArrowLeft } from 'react-icons/fi';
+import { 
+  HiShieldCheck, 
+  HiLockClosed, 
+  HiCheck, 
+  HiArrowLeft, 
+  HiUserPlus, 
+  HiArrowRightOnRectangle 
+} from 'react-icons/hi2';
 import { anonAuth } from '../services/auth';
 import { updateUser } from '../store/slices/authSlice';
 
@@ -100,77 +107,46 @@ const ShadowIDSetup = ({ onComplete }) => {
   // Choice screen - Create new or login existing
   if (mode === 'choice') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
-        <div className="max-w-md w-full">
-          {/* Shadow Logo/Title */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{ background: 'var(--accent)', boxShadow: '0 0 30px var(--accent)' }}>
-              <FiShield className="w-10 h-10 text-white" />
+      <div className="shadowid-setup">
+        <div className="shadowid-container">
+          {/* Logo */}
+          <div className="shadowid-logo">
+            <div className="shadowid-logo-icon">
+              <HiShieldCheck />
             </div>
-            <h1 className="text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              ShadowTalk
-            </h1>
-            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Anonymous. Secure. Persistent.
-            </p>
+            <h1 className="shadowid-title">ShadowTalk</h1>
+            <p className="shadowid-subtitle">Anonymous. Secure. Persistent.</p>
           </div>
 
           {/* Choice Card */}
-          <div 
-            className="p-8 rounded-xl mb-6"
-            style={{ 
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 10px 40px var(--shadow)'
-            }}
-          >
-            <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: 'var(--text-primary)' }}>
-              Get Started
-            </h2>
+          <div className="shadowid-card">
+            <h2 className="shadowid-card-title">Get Started</h2>
 
-            <div className="space-y-3">
+            <div className="shadowid-buttons">
               <button
                 onClick={handleCreateNew}
                 disabled={loading}
-                className="w-full py-4 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-3 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'var(--accent)',
-                  color: 'white',
-                  fontSize: '16px'
-                }}
+                className="shadowid-btn primary"
               >
-                <FiUserPlus className="w-5 h-5" />
+                <HiUserPlus />
                 {loading ? 'Creating...' : 'Create New Shadow Identity'}
               </button>
 
               <button
                 onClick={handleLoginExisting}
                 disabled={loading}
-                className="w-full py-4 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-3 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  fontSize: '16px'
-                }}
+                className="shadowid-btn secondary"
               >
-                <FiLogIn className="w-5 h-5" />
+                <HiArrowRightOnRectangle />
                 I Have a ShadowID
               </button>
             </div>
           </div>
 
           {/* Info */}
-          <div 
-            className="p-4 rounded-lg text-sm text-center flex items-center justify-center gap-2"
-            style={{ 
-              background: 'var(--success-light)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: 'var(--success)'
-            }}
-          >
-            <FiLock className="w-4 h-4" />
-            Your ShadowID is permanent and works across all devices
+          <div className="shadowid-info success">
+            <HiLockClosed />
+            <span>Your ShadowID is permanent and works across all devices</span>
           </div>
         </div>
       </div>
@@ -180,57 +156,33 @@ const ShadowIDSetup = ({ onComplete }) => {
   // Login with existing ShadowID
   if (mode === 'login') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
-        <div className="max-w-md w-full">
-          {/* Shadow Logo/Title */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{ background: 'var(--accent)', boxShadow: '0 0 30px var(--accent)' }}>
-              <FiShield className="w-10 h-10 text-white" />
+      <div className="shadowid-setup">
+        <div className="shadowid-container">
+          {/* Logo */}
+          <div className="shadowid-logo">
+            <div className="shadowid-logo-icon">
+              <HiShieldCheck />
             </div>
-            <h1 className="text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              ShadowTalk
-            </h1>
-            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Welcome Back
-            </p>
+            <h1 className="shadowid-title">ShadowTalk</h1>
+            <p className="shadowid-subtitle">Welcome Back</p>
           </div>
 
           {/* Login Card */}
-          <div 
-            className="p-8 rounded-xl mb-6"
-            style={{ 
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 10px 40px var(--shadow)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <FiLogIn className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-              <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Enter Your ShadowID
-              </h2>
+          <div className="shadowid-card">
+            <div className="shadowid-card-header">
+              <HiArrowRightOnRectangle className="shadowid-header-icon" />
+              <h2 className="shadowid-card-title">Enter Your ShadowID</h2>
             </div>
 
             {error && (
-              <div 
-                className="mb-4 p-3 rounded-lg text-sm flex items-center gap-2"
-                style={{ 
-                  background: 'var(--danger-light)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: 'var(--danger)'
-                }}
-              >
+              <div className="shadowid-error">
                 {error}
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label 
-                  htmlFor="shadowIdInput" 
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
+            <div className="shadowid-form">
+              <div className="shadowid-form-group">
+                <label htmlFor="shadowIdInput" className="shadowid-label">
                   ShadowID
                 </label>
                 <input
@@ -239,23 +191,12 @@ const ShadowIDSetup = ({ onComplete }) => {
                   value={shadowIdInput}
                   onChange={(e) => setShadowIdInput(e.target.value)}
                   placeholder="e.g., ShadowABC123"
-                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px',
-                    letterSpacing: '1px'
-                  }}
+                  className="shadowid-input shadowid-code"
                 />
               </div>
 
-              <div>
-                <label 
-                  htmlFor="loginPassword" 
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
+              <div className="shadowid-form-group">
+                <label htmlFor="loginPassword" className="shadowid-label">
                   Password (if protected)
                 </label>
                 <input
@@ -264,13 +205,7 @@ const ShadowIDSetup = ({ onComplete }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password (optional)"
-                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px'
-                  }}
+                  className="shadowid-input"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -283,43 +218,25 @@ const ShadowIDSetup = ({ onComplete }) => {
               <button
                 onClick={handleLoginWithShadowId}
                 disabled={!shadowIdInput.trim() || loading}
-                className="w-full py-3 px-6 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{
-                  background: 'var(--accent)',
-                  color: 'white',
-                  fontSize: '16px'
-                }}
+                className="shadowid-btn primary"
               >
-                <FiLogIn className="w-5 h-5" />
+                <HiArrowRightOnRectangle />
                 {loading ? 'Logging in...' : 'Login'}
               </button>
 
               <button
                 onClick={() => setMode('choice')}
-                className="w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-                style={{
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border)',
-                  fontSize: '14px'
-                }}
+                className="shadowid-btn back"
               >
-                <FiArrowLeft className="w-4 h-4" />
+                <HiArrowLeft />
                 Back
               </button>
             </div>
           </div>
 
           {/* Info */}
-          <div 
-            className="p-4 rounded-lg text-sm"
-            style={{ 
-              background: 'var(--info-light)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              color: 'var(--info)'
-            }}
-          >
-            Your ShadowID is usually in format: Shadow + 6 characters (e.g., ShadowABC123)
+          <div className="shadowid-info info">
+            <span>Your ShadowID is usually in format: Shadow + 6 characters (e.g., ShadowABC123)</span>
           </div>
         </div>
       </div>
@@ -329,61 +246,35 @@ const ShadowIDSetup = ({ onComplete }) => {
   // Success screen - Show created ShadowID
   if (mode === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
-        <div className="max-w-md w-full">
-          {/* Shadow Logo/Title */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{ background: 'var(--accent)', boxShadow: '0 0 30px var(--accent)' }}>
-              <FiCheck className="w-10 h-10 text-white" />
+      <div className="shadowid-setup">
+        <div className="shadowid-container">
+          {/* Logo */}
+          <div className="shadowid-logo">
+            <div className="shadowid-logo-icon success">
+              <HiCheck />
             </div>
-            <h1 className="text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              Success!
-            </h1>
-            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Your Shadow Identity is Ready
-            </p>
+            <h1 className="shadowid-title">Success!</h1>
+            <p className="shadowid-subtitle">Your Shadow Identity is Ready</p>
           </div>
 
           {/* Success Card */}
-          <div 
-            className="p-8 rounded-xl mb-6"
-            style={{ 
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 10px 40px var(--shadow)'
-            }}
-          >
-            <div className="text-center mb-6">
-              <div className="text-sm mb-3 flex items-center justify-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-                <FiLock className="w-4 h-4" />
-                Your Shadow Identity
+          <div className="shadowid-card">
+            <div className="shadowid-success-content">
+              <div className="shadowid-success-label">
+                <HiLockClosed />
+                <span>Your Shadow Identity</span>
               </div>
-              <div 
-                className="text-3xl font-bold px-6 py-4 rounded-lg inline-block select-all"
-                style={{ 
-                  background: 'var(--accent)',
-                  color: 'white',
-                  letterSpacing: '2px',
-                  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)'
-                }}
-              >
+              <div className="shadowid-code-display">
                 {createdShadowId}
               </div>
-              <div className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>
+              <div className="shadowid-success-hint">
                 Click to select and copy
               </div>
             </div>
 
-            <div 
-              className="p-4 rounded-lg text-sm mb-6"
-              style={{ 
-                background: 'var(--warning-light)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                color: 'var(--warning)'
-              }}
-            >
-              <div className="font-semibold mb-2">⚠️ Important: Save This ShadowID!</div>
-              <ul className="space-y-1 text-xs">
+            <div className="shadowid-warning">
+              <div className="shadowid-warning-title">⚠️ Important: Save This ShadowID!</div>
+              <ul className="shadowid-warning-list">
                 <li>• This is your only way to access your account</li>
                 <li>• There is NO password recovery</li>
                 <li>• Save it in a safe place (password manager, notes, etc.)</li>
@@ -392,14 +283,9 @@ const ShadowIDSetup = ({ onComplete }) => {
 
             <button
               onClick={onComplete}
-              className="w-full py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-              style={{
-                background: 'var(--accent)',
-                color: 'white',
-                fontSize: '16px'
-              }}
+              className="shadowid-btn primary"
             >
-              <FiCheck className="w-5 h-5" />
+              <HiCheck />
               I've Saved My ShadowID - Let's Go!
             </button>
           </div>
@@ -410,59 +296,33 @@ const ShadowIDSetup = ({ onComplete }) => {
 
   // Setup screen (existing code for new users or nickname setup)
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-md w-full">
-        {/* Shadow Logo/Title */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{ background: 'var(--accent)', boxShadow: '0 0 30px var(--accent)' }}>
-            <FiShield className="w-10 h-10 text-white" />
+    <div className="shadowid-setup">
+      <div className="shadowid-container">
+        {/* Logo */}
+        <div className="shadowid-logo">
+          <div className="shadowid-logo-icon">
+            <HiShieldCheck />
           </div>
-          <h1 className="text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-            ShadowTalk
-          </h1>
-          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-            Your Shadow Identity
-          </p>
+          <h1 className="shadowid-title">ShadowTalk</h1>
+          <p className="shadowid-subtitle">Your Shadow Identity</p>
         </div>
 
-        {/* ShadowID Card */}
-        <div 
-          className="p-8 rounded-xl mb-6"
-          style={{ 
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 10px 40px var(--shadow)'
-          }}
-        >
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              Create Your Identity
-            </h2>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Your ShadowID will be generated automatically
-            </p>
+        {/* Setup Card */}
+        <div className="shadowid-card">
+          <div className="shadowid-card-intro">
+            <h2 className="shadowid-card-title">Create Your Identity</h2>
+            <p className="shadowid-card-desc">Your ShadowID will be generated automatically</p>
           </div>
 
-          <div className="space-y-4">
+          <div className="shadowid-form">
             {error && (
-              <div 
-                className="p-3 rounded-lg text-sm flex items-center gap-2"
-                style={{ 
-                  background: 'var(--danger-light)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: 'var(--danger)'
-                }}
-              >
+              <div className="shadowid-error">
                 {error}
               </div>
             )}
 
-            <div>
-              <label 
-                htmlFor="nickname" 
-                className="block text-sm font-medium mb-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
+            <div className="shadowid-form-group">
+              <label htmlFor="nickname" className="shadowid-label">
                 Choose a Nickname (optional)
               </label>
               <input
@@ -472,26 +332,16 @@ const ShadowIDSetup = ({ onComplete }) => {
                 onChange={(e) => setNickname(e.target.value.slice(0, 20))}
                 placeholder="e.g., CoolDude, MysticOwl..."
                 maxLength={20}
-                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  fontSize: '16px'
-                }}
+                className="shadowid-input"
               />
-              <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              <div className="shadowid-char-count">
                 {nickname.length}/20 characters
               </div>
             </div>
 
-            <div>
-              <label 
-                htmlFor="setupPassword" 
-                className="text-sm font-medium mb-2 flex items-center gap-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <FiLock className="w-4 h-4" />
+            <div className="shadowid-form-group">
+              <label htmlFor="setupPassword" className="shadowid-label with-icon">
+                <HiLockClosed />
                 Protect with Password (optional)
               </label>
               <input
@@ -500,26 +350,16 @@ const ShadowIDSetup = ({ onComplete }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password (min 6 characters)"
-                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  fontSize: '16px'
-                }}
+                className="shadowid-input"
               />
-              <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+              <div className="shadowid-hint">
                 Secure your ShadowID with a password
               </div>
             </div>
 
             {password && (
-              <div>
-                <label 
-                  htmlFor="confirmPassword" 
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
+              <div className="shadowid-form-group">
+                <label htmlFor="confirmPassword" className="shadowid-label">
                   Confirm Password
                 </label>
                 <input
@@ -528,13 +368,7 @@ const ShadowIDSetup = ({ onComplete }) => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter password"
-                  className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px'
-                  }}
+                  className="shadowid-input"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -548,47 +382,29 @@ const ShadowIDSetup = ({ onComplete }) => {
             <button
               onClick={handleStart}
               disabled={loading}
-              className="w-full py-3 px-6 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{
-                background: 'var(--accent)',
-                color: 'white',
-                fontSize: '16px'
-              }}
+              className="shadowid-btn primary"
             >
-              <FiUserPlus className="w-5 h-5" />
+              <HiUserPlus />
               {loading ? 'Creating Account...' : 'Create My ShadowID'}
             </button>
 
             <button
               onClick={() => setMode('choice')}
-              className="w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-              style={{
-                background: 'transparent',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                fontSize: '14px'
-              }}
+              className="shadowid-btn back"
             >
-              <FiArrowLeft className="w-4 h-4" />
+              <HiArrowLeft />
               Back
             </button>
           </div>
         </div>
 
         {/* Info */}
-        <div 
-          className="p-4 rounded-lg text-sm"
-          style={{ 
-            background: 'var(--success-light)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: 'var(--success)'
-          }}
-        >
-          <div className="font-semibold mb-2 flex items-center gap-2">
-            <FiShield className="w-4 h-4" />
+        <div className="shadowid-info success">
+          <div className="shadowid-info-title">
+            <HiShieldCheck />
             Your identity is persistent!
           </div>
-          <ul className="space-y-1 text-xs">
+          <ul className="shadowid-info-list">
             <li>• Your ShadowID stays the same across devices</li>
             <li>• Change your nickname anytime</li>
             <li>• Points and reputation are saved</li>

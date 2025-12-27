@@ -9,7 +9,7 @@ import ReactionPicker from './ReactionPicker';
 import ReportModal from './ReportModal';
 import { updateUser } from '../store/slices/authSlice';
 
-const Message = ({ message, onReply, isReply = false }) => {
+const Message = ({ message, onReply, isReply = false, isDM = false }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -213,7 +213,7 @@ const Message = ({ message, onReply, isReply = false }) => {
             >
               <HiOutlineFaceSmile />
             </button>
-            {!isReply && (
+            {!isReply && !isDM && (
               <button
                 onClick={loadReplies}
                 className="action-btn"

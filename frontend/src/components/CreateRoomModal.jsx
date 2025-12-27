@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { HiXMark } from 'react-icons/hi2';
 import { createRoom } from '../store/slices/roomsSlice';
+import Toast from './Toast';
 
 const CreateRoomModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -12,6 +14,29 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200);
+  };
 
   const topics = [
     'General', 'Technology', 'Gaming', 'Music', 'Movies',
@@ -31,11 +56,19 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      await dispatch(createRoom(formData)).unwrap();
+      const result = await dispatch(createRoom(formData)).unwrap();
       setFormData({ name: '', description: '', topic: 'General', roomType: 'text' });
-      onClose();
+      setToastMessage(`Room "${formData.name}" created successfully!`);
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => {
+        handleClose();
+      }, 1500);
     } catch (err) {
       setError(err);
+      setToastMessage(err || 'Failed to create room');
+      setToastType('error');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
@@ -44,63 +77,84 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6 sticky top-0 bg-[var(--bg-secondary)] pb-4 border-b border-[var(--border)]">
-          <h2 className="text-2xl font-bold">Create New Room</h2>
+    <>
+      {showToast && (
+        <Toast 
+          message={toastMessage}
+          type={toastType}
+          isVisible={showToast}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+      
+      <div 
+        className={`modal-overlay ${isClosing ? 'closing' : ''}`}
+        onClick={(e) => e.target === e.currentTarget && handleClose()}
+      >
+      <div className={`modal-content ${isClosing ? 'closing' : ''}`}>
+        <div className="modal-header">
+          <h2 className="modal-title">Create New Room</h2>
           <button
-            onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-white text-2xl"
+            onClick={handleClose}
+            className="modal-close"
+            aria-label="Close modal"
           >
-            ×
+            <HiXMark />
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-4">
-            {error}
+          <div className="error-alert">
+            ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Room Name *
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label className="form-label">
+              Room Name <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white focus:outline-none focus:border-[var(--accent)]"
+              className="form-input"
               placeholder="Enter room name (3-50 characters)"
               minLength={3}
               maxLength={50}
               required
+              autoFocus
             />
+            <p className="form-hint">
+              {formData.name.length}/50 characters
+            </p>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Description (Optional)
+          <div className="form-group">
+            <label className="form-label">
+              Description <span className="text-[var(--text-muted)] text-xs">(Optional)</span>
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white focus:outline-none focus:border-[var(--accent)] resize-none"
+              className="form-textarea"
               placeholder="What's this room about?"
               rows={3}
               maxLength={200}
             />
+            <p className="form-hint">
+              {formData.description.length}/200 characters
+            </p>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Topic *
+          <div className="form-group">
+            <label className="form-label">
+              Topic <span className="text-red-400">*</span>
             </label>
             <select
               value={formData.topic}
               onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-              className="w-full px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-white focus:outline-none focus:border-[var(--accent)]"
+              className="form-select"
               required
             >
               {topics.map(topic => (
@@ -109,19 +163,16 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
             </select>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-3">
-              Room Type * <span className="text-[var(--accent)] ml-1">NEW!</span>
+          <div className="form-group">
+            <label className="form-label">
+              Room Type <span className="text-red-400">*</span>
+              <span className="ml-2 px-2 py-0.5 bg-[var(--accent)]/20 text-[var(--accent)] text-xs rounded-full">NEW</span>
             </label>
-            <div className="space-y-3">
+            <div className="room-type-options">
               {roomTypes.map(type => (
                 <label
                   key={type.value}
-                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                    formData.roomType === type.value
-                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                      : 'border-[var(--border)] hover:border-[var(--border-hover)]'
-                  }`}
+                  className={`room-type-option ${formData.roomType === type.value ? 'selected' : ''}`}
                 >
                   <input
                     type="radio"
@@ -129,44 +180,53 @@ const CreateRoomModal = ({ isOpen, onClose }) => {
                     value={type.value}
                     checked={formData.roomType === type.value}
                     onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
-                    className="mt-1"
+                    className="hidden"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-white">{type.label}</div>
-                    <div className="text-sm text-[var(--text-secondary)] mt-1">
-                      {type.description}
-                    </div>
+                    <div className="room-type-label">{type.label}</div>
+                    <div className="room-type-description">{type.description}</div>
                   </div>
+                  {formData.roomType === type.value && (
+                    <div className="room-type-check">✓</div>
+                  )}
                 </label>
               ))}
             </div>
             {formData.roomType !== 'text' && (
-              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm text-blue-300">
+              <div className="info-alert">
                 🎙️ Voice rooms use WebRTC for peer-to-peer audio. Microphone permission required.
               </div>
             )}
           </div>
 
-          <div className="flex gap-3 justify-end">
+          <div className="modal-actions">
             <button
               type="button"
-              onClick={onClose}
-              className="px-6 py-3 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg hover:bg-[var(--border)] transition-colors"
+              onClick={handleClose}
+              className="btn-secondary"
               disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-[var(--accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-              disabled={loading}
+              className="btn-primary"
+              disabled={loading || formData.name.length < 3}
             >
-              {loading ? 'Creating...' : 'Create Room'}
+              {loading ? (
+                <>
+                  <div className="btn-spinner-small"></div>
+                  Creating...
+                </>
+              ) : (
+                'Create Room'
+              )}
             </button>
           </div>
         </form>
       </div>
     </div>
+    </>
   );
 };
 
