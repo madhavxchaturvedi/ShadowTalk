@@ -1,14 +1,32 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
-import { HiHome, HiChatBubbleLeftRight, HiUser, HiShieldCheck, HiMoon, HiArrowRightOnRectangle, HiSparkles } from 'react-icons/hi2';
-import { useState } from 'react';
+import { HiHome, HiChatBubbleLeftRight, HiUser, HiShieldCheck, HiMoon, HiArrowRightOnRectangle, HiSparkles, HiBars3, HiXMark } from 'react-icons/hi2';
+import { useState, useEffect } from 'react';
 
 const Navbar = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -23,19 +41,52 @@ const Navbar = () => {
   ];
 
   return (
-    <aside className="sidebar">
-      {/* Sidebar Header */}
-      <div className="sidebar-header">
-        <Link to="/" className="sidebar-logo">
+    <>
+      {/* Mobile Header Bar */}
+      <div className="mobile-header">
+        <Link to="/" className="mobile-logo">
           <div className="logo-icon-wrapper">
             <HiMoon className="sidebar-logo-icon" />
           </div>
-          <div className="logo-text">
-            <span className="logo-main">ShadowTalk</span>
-            <span className="logo-tagline">Anonymous Chat</span>
-          </div>
+          <span className="logo-main">ShadowTalk</span>
         </Link>
+        <button 
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {mobileMenuOpen ? <HiXMark /> : <HiBars3 />}
+        </button>
       </div>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="sidebar-header">
+          <Link to="/" className="sidebar-logo">
+            <div className="logo-icon-wrapper">
+              <HiMoon className="sidebar-logo-icon" />
+            </div>
+            <div className="logo-text">
+              <span className="logo-main">ShadowTalk</span>
+              <span className="logo-tagline">Anonymous Chat</span>
+            </div>
+          </Link>
+          <button 
+            className="mobile-close-btn"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <HiXMark />
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
@@ -95,7 +146,26 @@ const Navbar = () => {
           )}
         </div>
       )}
-    </aside>
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav">
+        {navItems.map((item) => {
+          const IconComponent = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+            >
+              <IconComponent className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 };
 

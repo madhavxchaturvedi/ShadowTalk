@@ -1625,24 +1625,14 @@ html {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.message-wrapper.message-reply {
-  margin-left: 44px;
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.01);
-  border-left: 2px solid var(--border);
-}
-
-.message-wrapper.message-reply:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-left-color: var(--accent);
-}
-
 /* Avatar */
 .message-avatar {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
   position: relative;
+  align-self: flex-start;
+  margin-top: 0;
 }
 
 .avatar-circle {
@@ -1913,27 +1903,47 @@ html {
   background: rgba(16, 185, 129, 0.05);
 }
 
+.reply-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ============================================ */
-/* Redesigned Reply Section - Inline Compact */
+/* Redesigned Reply Threading - Discord Style */
 /* ============================================ */
 
 .replies-section {
-  margin-top: 8px;
-  padding-left: 44px;
+  margin-top: 4px;
+  margin-left: 24px;
+  padding-left: 20px;
+  border-left: 2px solid var(--border);
+  position: relative;
+}
+
+.replies-section::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent) 0%, var(--border) 100%);
+  opacity: 0.5;
 }
 
 .replies-loading {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 16px 12px;
   color: var(--text-muted);
   font-size: 13px;
+  font-weight: 500;
 }
 
 .spinner-small {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
@@ -1943,16 +1953,154 @@ html {
 .replies-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 8px;
+  gap: 0;
+}
+
+/* Reply messages have smaller styling */
+.replies-section .message-wrapper.message-reply {
+  padding: 8px 12px;
+  margin: 0;
+  background: transparent;
+  border-radius: 6px;
+}
+
+.replies-section .message-wrapper.message-reply:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.replies-section .message-reply .message-avatar {
+  width: 28px;
+  min-width: 28px;
+}
+
+.replies-section .message-reply .avatar-circle {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.replies-section .message-reply .level-badge {
+  display: none;
+}
+
+.replies-section .message-reply .message-body {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.replies-section .message-reply .username {
+  font-size: 13px;
+}
+
+.replies-section .message-reply .timestamp {
+  font-size: 11px;
+}
+
+/* ============================================ */
+/* Discord-Style Reply Connector */
+/* ============================================ */
+
+/* Reply messages have the connector line */
+.message-wrapper.message-reply {
+  position: relative;
+  margin-top: 0;
+  padding-top: 4px;
+}
+
+.message-wrapper.message-reply:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Reply Connector - The curved line connecting to parent message */
+.reply-connector {
+  position: absolute;
+  left: 16px;
+  top: -4px;
+  width: 36px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.reply-connector-line {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  width: 20px;
+  height: 24px;
+  border-left: 2px solid #4e5058;
+  border-bottom: 2px solid #4e5058;
+  border-bottom-left-radius: 8px;
+}
+
+/* Reply Reference - Shows who you're replying to with preview */
+.reply-reference {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  margin-left: 2px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1.3;
+}
+
+.reply-reference:hover .reply-to-preview {
+  color: var(--text-primary);
+}
+
+/* Small avatar of the person being replied to */
+.reply-reference-avatar {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: white;
+}
+
+/* Name of the person being replied to */
+.reply-to-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.reply-to-name:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
+/* Preview of the parent message content */
+.reply-to-preview {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+  opacity: 0.7;
+}
+
+.reply-to-preview:hover {
+  opacity: 1;
 }
 
 /* Reply Input - Inline Compact Style */
 .reply-input-container {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+  gap: 10px;
+  padding: 12px 0 8px 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
 }
 
 .reply-input-avatar {
@@ -1963,7 +2111,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
   flex-shrink: 0;
@@ -1974,11 +2122,11 @@ html {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   transition: all 0.2s ease;
 }
 
@@ -1996,6 +2144,7 @@ html {
   font-size: 14px;
   padding: 4px 0;
   outline: none;
+  min-width: 0;
 }
 
 .reply-text-input::placeholder {
@@ -2008,13 +2157,14 @@ html {
 }
 
 .reply-send-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--accent);
   border: none;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2044,6 +2194,57 @@ html {
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
+}
+
+/* Collapse replies button */
+.replies-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.replies-collapse-btn:hover {
+  color: var(--accent);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+/* Mobile Replies */
+@media (max-width: 768px) {
+  .replies-section {
+    margin-left: 16px;
+    padding-left: 14px;
+  }
+
+  .replies-section .message-reply .message-avatar {
+    width: 24px;
+    min-width: 24px;
+  }
+
+  .replies-section .message-reply .avatar-circle {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .reply-input-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .reply-input-form {
+    padding: 6px 12px;
+  }
 }
 
 /* Remove old reply styles */
@@ -5614,3 +5815,885 @@ html {
     font-size: 15px;
   }
 }
+
+/* ===================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS
+   =================================== */
+
+/* Mobile Header Bar - Hidden on desktop */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.98) 0%, rgba(0, 0, 0, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.mobile-logo .logo-icon-wrapper {
+  width: 32px;
+  height: 32px;
+}
+
+.mobile-logo .logo-main {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mobile-menu-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-close-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.mobile-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  animation: fadeInOverlay 0.3s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mobile Bottom Navigation - Hidden on desktop */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(0deg, rgba(10, 10, 10, 0.98) 0%, rgba(0, 0, 0, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+  z-index: 1000;
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.mobile-nav-item.active {
+  color: var(--accent);
+}
+
+.mobile-nav-item.active .mobile-nav-icon {
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+
+.mobile-nav-icon {
+  font-size: 22px;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ===================================
+   TABLET BREAKPOINT (1024px)
+   =================================== */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .main-content {
+    margin-left: 240px;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .dm-list-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* ===================================
+   MOBILE BREAKPOINT (768px)
+   =================================== */
+@media (max-width: 768px) {
+  /* Show mobile elements */
+  .mobile-header {
+    display: flex;
+  }
+  
+  .mobile-overlay {
+    display: block;
+  }
+  
+  .mobile-bottom-nav {
+    display: flex;
+  }
+  
+  .mobile-close-btn {
+    display: flex;
+  }
+  
+  /* Hide sidebar by default on mobile */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: none;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0, 0, 0, 0.8);
+  }
+  
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Main content adjustments */
+  .main-content {
+    margin-left: 0;
+    padding-top: 70px;
+    padding-bottom: 80px;
+  }
+  
+  /* Page containers */
+  .home-page,
+  .dm-list-page,
+  .profile-page,
+  .mod-dashboard {
+    padding-top: 70px;
+    padding-bottom: 90px;
+  }
+  
+  /* Room page */
+  .room-page {
+    padding-top: 60px;
+    padding-bottom: 0;
+  }
+  
+  /* Direct message page */
+  .dm-page {
+    height: calc(100vh - 60px);
+    padding-top: 60px;
+  }
+  
+  /* Home page adjustments */
+  .home-header {
+    padding: 20px 16px;
+  }
+  
+  .home-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .home-title {
+    font-size: 28px;
+  }
+  
+  .btn-create-room {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .home-toolbar {
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  .search-bar {
+    max-width: 100%;
+  }
+  
+  .sort-select {
+    width: 100%;
+  }
+  
+  .topic-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .topic-filter-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .topic-btn {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  /* Room Card mobile */
+  .room-card {
+    padding: 16px;
+  }
+  
+  .room-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .room-title {
+    font-size: 16px;
+  }
+  
+  /* DM List page */
+  .dm-list-header {
+    padding: 20px 16px;
+  }
+  
+  .dm-list-title {
+    font-size: 24px;
+  }
+  
+  .dm-list-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .dm-card {
+    padding: 16px;
+  }
+  
+  /* Profile page */
+  .profile-header {
+    padding: 24px 16px;
+  }
+  
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 32px;
+  }
+  
+  .profile-name {
+    font-size: 24px;
+  }
+  
+  .profile-stats {
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+  }
+  
+  .profile-stat {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .profile-content {
+    padding: 16px;
+  }
+  
+  .profile-section {
+    padding: 16px;
+  }
+  
+  /* Moderator Dashboard */
+  .mod-header {
+    padding: 20px 16px;
+  }
+  
+  .mod-title {
+    font-size: 24px;
+  }
+  
+  .mod-stats {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .mod-stat-card {
+    flex: 1 1 45%;
+    min-width: 120px;
+    padding: 12px;
+  }
+  
+  .mod-stat-value {
+    font-size: 24px;
+  }
+  
+  .mod-tabs {
+    padding: 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mod-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .mod-reports-list {
+    padding: 16px;
+  }
+  
+  .mod-report-card {
+    padding: 16px;
+  }
+  
+  .mod-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .mod-report-actions {
+    width: 100%;
+  }
+  
+  .mod-action-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  /* Room Page */
+  .room-header {
+    padding: 12px 16px;
+    height: auto;
+    min-height: 60px;
+  }
+  
+  .room-header-left {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .room-name {
+    font-size: 16px;
+  }
+  
+  .room-header-actions {
+    gap: 8px;
+  }
+  
+  .room-action-btn {
+    padding: 8px;
+  }
+  
+  .room-messages {
+    padding: 12px;
+  }
+  
+  .room-input-container {
+    padding: 12px 16px;
+  }
+  
+  .room-input-form {
+    gap: 8px;
+  }
+  
+  .message-input-wrapper {
+    padding: 10px 12px;
+  }
+  
+  .message-input {
+    font-size: 14px;
+  }
+  
+  /* Message adjustments */
+  .message-wrapper {
+    padding: 8px 12px;
+  }
+  
+  .avatar-circle {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+  
+  .message-sender {
+    font-size: 13px;
+  }
+  
+  .message-text {
+    font-size: 14px;
+  }
+  
+  .message-actions {
+    position: relative;
+    top: auto;
+    right: auto;
+    opacity: 1;
+    transform: none;
+    margin-top: 8px;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  
+  /* Reply section mobile */
+  .replies-section {
+    margin-left: 20px;
+    padding-left: 12px;
+  }
+  
+  .reply-reference {
+    font-size: 12px;
+  }
+  
+  .reply-to-preview {
+    max-width: 150px;
+  }
+  
+  .reply-connector {
+    left: 28px;
+    width: 24px;
+  }
+  
+  .reply-connector-line {
+    width: 24px;
+  }
+  
+  /* Voice Channel mobile */
+  .voice-channel {
+    padding: 12px;
+    margin: 0 16px 16px;
+    border-radius: 8px;
+  }
+  
+  .voice-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .voice-header-right {
+    width: 100%;
+  }
+  
+  .voice-header-right button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .voice-participants-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .voice-participant {
+    padding: 12px;
+  }
+  
+  .voice-participant-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+  
+  /* Direct Message page */
+  .dm-header {
+    padding: 12px 16px;
+    height: auto;
+    min-height: 60px;
+  }
+  
+  .dm-user-name {
+    font-size: 16px;
+  }
+  
+  .dm-messages {
+    padding: 12px;
+  }
+  
+  .dm-input-container {
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Modal adjustments */
+  .modal-content,
+  .create-room-modal,
+  .report-modal-content {
+    width: calc(100% - 32px);
+    max-width: 100%;
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+  
+  .modal-header {
+    padding: 16px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-footer {
+    padding: 16px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-footer button {
+    width: 100%;
+  }
+  
+  /* Reaction picker mobile */
+  .reaction-picker {
+    bottom: 80px;
+    min-width: auto;
+    width: calc(100% - 32px);
+    max-width: 360px;
+    padding: 12px;
+  }
+  
+  .reaction-picker-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  
+  .reaction-emoji-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 24px;
+  }
+  
+  /* Toast mobile */
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 90px;
+    transform: none;
+    max-width: 100%;
+  }
+  
+  /* Skeleton loaders */
+  .skeleton-container {
+    padding: 16px;
+  }
+}
+
+/* ===================================
+   SMALL MOBILE BREAKPOINT (480px)
+   =================================== */
+@media (max-width: 480px) {
+  .mobile-header {
+    height: 54px;
+    padding: 0 12px;
+  }
+  
+  .mobile-logo .logo-main {
+    font-size: 14px;
+  }
+  
+  .mobile-bottom-nav {
+    height: 64px;
+  }
+  
+  .mobile-nav-item {
+    padding: 6px 12px;
+    min-width: 50px;
+  }
+  
+  .mobile-nav-icon {
+    font-size: 20px;
+  }
+  
+  .mobile-nav-label {
+    font-size: 9px;
+  }
+  
+  /* Page titles */
+  .home-title,
+  .dm-list-title,
+  .mod-title {
+    font-size: 22px;
+  }
+  
+  .home-subtitle,
+  .dm-list-subtitle {
+    font-size: 13px;
+  }
+  
+  /* Cards */
+  .room-card,
+  .dm-card,
+  .mod-report-card {
+    padding: 12px;
+  }
+  
+  /* Stats */
+  .mod-stat-card {
+    flex: 1 1 100%;
+  }
+  
+  /* Profile */
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+  
+  .profile-name {
+    font-size: 20px;
+  }
+  
+  /* Voice participants */
+  .voice-participants-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Messages */
+  .avatar-circle {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .message-sender {
+    font-size: 12px;
+  }
+  
+  .message-text {
+    font-size: 13px;
+  }
+  
+  .message-time {
+    font-size: 10px;
+  }
+  
+  /* Inputs */
+  .message-input,
+  .search-bar input,
+  .form-input {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+  
+  /* Modals */
+  .modal-content,
+  .create-room-modal,
+  .report-modal-content {
+    margin: 8px;
+    width: calc(100% - 16px);
+  }
+}
+
+/* ===================================
+   LANDSCAPE MOBILE
+   =================================== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .mobile-header {
+    height: 48px;
+  }
+  
+  .mobile-bottom-nav {
+    height: 56px;
+    padding: 4px 0;
+  }
+  
+  .mobile-nav-label {
+    display: none;
+  }
+  
+  .mobile-nav-icon {
+    font-size: 24px;
+  }
+  
+  .main-content {
+    padding-top: 56px;
+    padding-bottom: 64px;
+  }
+  
+  .voice-participants-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =================================== */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .nav-item,
+  .action-btn,
+  .room-action-btn,
+  .topic-btn,
+  .mod-tab-btn {
+    min-height: 44px;
+  }
+  
+  /* Remove hover effects that don't work on touch */
+  .message-wrapper:hover .message-actions {
+    opacity: 1;
+    transform: none;
+  }
+  
+  /* Always show message actions on touch */
+  .message-actions {
+    opacity: 1;
+    transform: none;
+  }
+  
+  /* Better tap feedback */
+  .nav-item:active,
+  .action-btn:active,
+  .btn-create-room:active,
+  .room-card:active {
+    transform: scale(0.98);
+  }
+  
+  /* Prevent text selection on interactive elements */
+  button,
+  a,
+  .nav-item,
+  .room-card,
+  .dm-card {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* ===================================
+   SAFE AREA INSETS (Notch devices)
+   =================================== */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .mobile-header {
+    padding-top: env(safe-area-inset-top);
+    height: calc(60px + env(safe-area-inset-top));
+  }
+  
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(70px + env(safe-area-inset-bottom));
+  }
+  
+  @media (max-width: 768px) {
+    .main-content {
+      padding-top: calc(70px + env(safe-area-inset-top));
+      padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    }
+    
+    .home-page,
+    .dm-list-page,
+    .profile-page,
+    .mod-dashboard {
+      padding-top: calc(70px + env(safe-area-inset-top));
+      padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* ===================================
+   REDUCED MOTION
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .sidebar {
+    transition: none;
+  }
+}
+

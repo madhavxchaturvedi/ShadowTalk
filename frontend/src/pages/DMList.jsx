@@ -92,13 +92,13 @@ const DMList = () => {
                 className="dm-conversation-card"
               >
                 <div className="dm-conv-avatar">
-                  {(conv.user.nickname || conv.user.anonymousId || 'U').charAt(0).toUpperCase()}
+                  {(conv.user.nickname || 'A').charAt(0).toUpperCase()}
                 </div>
                 <div className="dm-conv-content">
                   <div className="dm-conv-header">
                     <div className="dm-conv-user">
                       <span className="dm-conv-name">
-                        {conv.user.nickname || `User ${conv.user._id.slice(-6)}`}
+                        {conv.user.nickname || `Anonymous #${(conv.user.anonymousId || conv.user._id).slice(-4)}`}
                       </span>
                       <span className="dm-conv-level">
                         <HiSparkles />

@@ -178,7 +178,7 @@ const Profile = () => {
               </div>
               <div className="info-item">
                 <span className="info-label">Anonymous ID</span>
-                <span className="info-value">{user.anonymousId}</span>
+                <span className="info-value">Anonymous #{user.anonymousId?.slice(-4)}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Member Since</span>

@@ -209,7 +209,7 @@ const DirectMessage = () => {
         </button>
         
         <div className="room-info">
-          <h1>{otherUser?.nickname || otherUser?.anonymousId || 'Direct Message'}</h1>
+          <h1>{otherUser?.nickname || `Anonymous #${(otherUser?.anonymousId || '0000').slice(-4)}`}</h1>
           {otherUser && (
             <p>Level {otherUser.reputation.level} • {otherUser.reputation.points} points</p>
           )}
@@ -318,7 +318,7 @@ const DirectMessage = () => {
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
         reportedUserId={userId}
-        reportedUserName={otherUser?.anonymousId}
+        reportedUserName={otherUser?.nickname || `Anonymous #${(otherUser?.anonymousId || '0000').slice(-4)}`}
       />
     </div>
   );

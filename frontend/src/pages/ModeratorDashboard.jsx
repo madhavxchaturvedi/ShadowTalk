@@ -207,7 +207,7 @@ const ModeratorDashboard = () => {
                   <div className="mod-info-section">
                     <div className="mod-info-label">Reported by:</div>
                     <div className="mod-info-value">
-                      {report.reporter?.nickname || report.reporter?.anonymousId || 'Unknown'}
+                      {report.reporter?.nickname || `Anonymous #${(report.reporter?.anonymousId || '0000').slice(-4)}`}
                     </div>
                   </div>
 
@@ -217,7 +217,7 @@ const ModeratorDashboard = () => {
                       <div className="mod-info-label">Message content:</div>
                       <div className="mod-message-box">
                         <div className="mod-message-sender">
-                          From: {report.reportedMessage.sender?.nickname || report.reportedMessage.sender?.anonymousId || 'Unknown'}
+                          From: {report.reportedMessage.sender?.nickname || `Anonymous #${(report.reportedMessage.sender?.anonymousId || '0000').slice(-4)}`}
                         </div>
                         <div className="mod-message-content">
                           {report.reportedMessage.content}
@@ -232,7 +232,7 @@ const ModeratorDashboard = () => {
                       <div className="mod-info-label">Reported user:</div>
                       <div className="mod-user-info">
                         <span className="mod-info-value">
-                          {report.reportedUser.nickname || report.reportedUser.anonymousId}
+                          {report.reportedUser.nickname || `Anonymous #${(report.reportedUser.anonymousId || '0000').slice(-4)}`}
                         </span>
                         {report.reportedUser.suspended && (
                           <span className="mod-user-badge mod-user-suspended">

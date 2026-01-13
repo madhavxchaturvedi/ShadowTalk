@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { FiClock, FiCornerUpRight, FiMoreVertical } from 'react-icons/fi';
+import { FiClock } from 'react-icons/fi';
 import { HiOutlineFaceSmile, HiOutlineChatBubbleLeftRight, HiOutlineFlag } from 'react-icons/hi2';
 import api from '../services/api';
 import { socket } from '../services/socket';
@@ -155,9 +155,31 @@ const Message = ({ message, onReply, isReply = false, isDM = false }) => {
     }
   };
 
+  // Get parent message sender info
+  const getParentDisplayName = () => {
+    if (!message.parentMessage?.sender) return 'Unknown';
+    if (message.parentMessage.sender.nickname?.trim()) {
+      return message.parentMessage.sender.nickname;
+    }
+    const id = message.parentMessage.sender.anonymousId || '0000';
+    return `Anonymous #${id.slice(-4)}`;
+  };
+
+  const getParentAvatarInitial = () => {
+    const name = getParentDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
   return (
     <>
       <div className={`message-wrapper ${isReply ? 'message-reply' : ''}`}>
+        {/* Reply Connector Line (Discord-style) */}
+        {isReply && message.parentMessage && (
+          <div className="reply-connector">
+            <div className="reply-connector-line"></div>
+          </div>
+        )}
+
         {/* Avatar */}
         <div className="message-avatar">
           <div className="avatar-circle">
@@ -170,15 +192,6 @@ const Message = ({ message, onReply, isReply = false, isDM = false }) => {
 
         {/* Content */}
         <div className="message-content-wrapper">
-        {/* Reply Reference (if this is a reply) */}
-        {isReply && message.parentMessage && (
-          <div className="reply-reference">
-            <FiCornerUpRight className="reply-icon" />
-            <span className="reply-to-text">
-              Reply to <span className="reply-to-name">{message.parentMessage.sender?.nickname || 'Anonymous'}</span>
-            </span>
-          </div>
-        )}
 
         {/* Header */}
         <div className="message-header">
@@ -265,7 +278,7 @@ const Message = ({ message, onReply, isReply = false, isDM = false }) => {
         {/* Reply Thread Indicator - Always show if has replies */}
         {!isReply && (replies.length > 0 || message.replyCount > 0) && !showReplies && (
           <button onClick={loadReplies} className="reply-indicator">
-            <FiCornerUpRight className="w-4 h-4" />
+            <HiOutlineChatBubbleLeftRight className="w-4 h-4" />
             {replies.length || message.replyCount || 0} {(replies.length || message.replyCount) === 1 ? 'reply' : 'replies'}
           </button>
         )}
@@ -288,7 +301,7 @@ const Message = ({ message, onReply, isReply = false, isDM = false }) => {
             reportedMessageId={message._id}
             messageType="Message"
             reportedUserId={message.sender._id}
-            reportedUserName={message.sender.anonymousId}
+            reportedUserName={message.sender.nickname || `Anonymous #${(message.sender.anonymousId || '0000').slice(-4)}`}
           />
         )}
       </div>

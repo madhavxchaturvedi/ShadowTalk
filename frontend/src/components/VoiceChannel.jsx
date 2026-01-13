@@ -49,7 +49,7 @@ const VoiceChannel = ({ roomId, roomName, roomType }) => {
       await webRTCManager.joinVoiceChannel(
         roomId,
         user._id,
-        user.anonymousId
+        user.nickname || `Anonymous #${user.anonymousId?.slice(-4)}`
       );
       setInVoice(true);
       console.log('✅ Joined voice channel');
@@ -146,13 +146,13 @@ const VoiceChannel = ({ roomId, roomName, roomType }) => {
               <div className="voice-participant">
                 <div className="voice-avatar-container">
                   <div className={`voice-avatar ${isSpeaking ? 'speaking' : ''}`}>
-                    <span>{user.anonymousId.substring(0, 2).toUpperCase()}</span>
+                    <span>{(user.nickname || 'A').charAt(0).toUpperCase()}</span>
                   </div>
                   {isSpeaking && <div className="voice-speaking-ring"></div>}
                 </div>
                 
                 <div className="voice-participant-info">
-                  <span className="voice-participant-name">{user.anonymousId}</span>
+                  <span className="voice-participant-name">{user.nickname || `Anonymous #${user.anonymousId?.slice(-4)}`}</span>
                   <span className="voice-participant-tag">You</span>
                 </div>
 
